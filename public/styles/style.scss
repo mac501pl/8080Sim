@@ -1,0 +1,34 @@
+@use 'variables'as *;
+
+.breakpoint {
+  border-radius: 50%;
+  background-color: darkred;
+  padding: 7px !important;
+  width: 1vw !important;
+  height: 1vh !important;
+}
+
+body {
+  overflow-y: hidden;
+  height: 100%;
+}
+
+.memory-cell {
+  color: inherit !important;
+  font-size: inherit !important;
+  font-family: inherit !important;
+  border: none !important;
+}
+
+.memory-cell-not-editing {
+  background: transparent !important;
+}
+
+.memory-cell-editing {
+  background-color: $primary-color-dark !important;
+}
+
+button {
+  width: 45px;
+  height: 45px;
+}
