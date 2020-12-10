@@ -21,9 +21,4 @@ export const findInstructionSize = (mnemonic: string): number => instructionList
 
 export const findInstructionSizeByOpcode = (opcode: HexNum): number => instructionList.find(instruction => instruction.opCode === opcode.intValue).size;
 
-export const chunk = <T>(array: Array<T>, size: number): Array<Array<T>> => array.reduce((arr: Array<Array<T>>, item: T, idx: number) => (idx % size === 0 ?
-  [...arr, [item]] :
-  [...arr.slice(0, -1), [...arr.slice(-1)[0], item]]), []);
-
 export const uniqueByMnemonic = (arr: Array<IInstruction>): Array<IInstruction> => arr.filter((v, i, a) => a.findIndex(t => (t.mnemonic === v.mnemonic)) === i);
-// TODO move prettifier to editor configuration forlder and add appropiate name

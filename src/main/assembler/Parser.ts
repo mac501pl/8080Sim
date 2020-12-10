@@ -1,5 +1,5 @@
 import { findInstructionSize } from '@utils/Utils';
-import { labelRegex, instructionRegex, declarationRegex, beginMacroRegex, endMacroRegex, commentRegex, variableRegex, hexNumberRegex, binNumberRegex, decNumberRegex, octNumberRegex } from '@utils/Regex';
+import { labelRegex, instructionRegex, declarationRegex, beginMacroRegex, endMacroRegex, commentRegex, variableRegex, hexNumberRegex, binNumberRegex, decNumberRegex, octNumberRegex, equRegex, literalRegex } from '@utils/Regex';
 import Instruction from './Types/Instruction';
 import Declaration from './Types/Declaration';
 import { all, create } from 'mathjs';
@@ -55,7 +55,8 @@ export default class Parser {
     const linesWithBreakpoints = this.applyBreakpointsToLines(splittedText, breakpoints);
     const linesWithoutComments = linesWithBreakpoints.map(line => this.removeComment(line));
     const trimmedLines = linesWithoutComments.filter(line => line.content.trim() !== '');
-    const linesWithoutMacros = this.removeMacros(trimmedLines);
+    const linesWithoutEqu = Parser.replaceEqu(trimmedLines);
+    const linesWithoutMacros = this.removeMacros(linesWithoutEqu);
 
     const labels = Parser.getLabels(linesWithoutMacros.map(line => line.content));
     let address = 0;
@@ -77,6 +78,39 @@ export default class Parser {
       }
       return { lineNumber: i, label: label, content: content };
     }).filter(parsedLine => parsedLine.content || parsedLine.label);
+  }
+
+  public static replaceEqu(lines: Array<LineWithBreakpoint>, removeEquLines = true): Array<LineWithBreakpoint> {
+    interface EqData {replacerString: string, stringToBeReplaced: string, replacerRegex: RegExp}
+    const currentReplacers: Array<EqData> = [];
+    const spliceIndeces: Array<number> = [];
+    const replacedLine = lines.map((line, i) => {
+      if (equRegex.test(line.content)) {
+        const { stringToBeReplaced, replacerString } = equRegex.exec(line.content).groups;
+        const replacerRegex = new RegExp(`(?<toReplace>\\b${stringToBeReplaced}\\b)(?=(?:(?:[^']*'){2})*[^']*$)(?!\\s*equ)`);
+        if (currentReplacers.find(replacer => replacer.stringToBeReplaced === stringToBeReplaced)) {
+          const index = currentReplacers.findIndex(replacer => replacer.stringToBeReplaced === stringToBeReplaced);
+          currentReplacers[index] = { replacerString: replacerString, stringToBeReplaced: stringToBeReplaced, replacerRegex: replacerRegex };
+          spliceIndeces.push(i);
+        } else {
+          currentReplacers.push({ replacerString: replacerString, stringToBeReplaced: stringToBeReplaced, replacerRegex: replacerRegex });
+          spliceIndeces.push(i);
+        }
+      }
+      for (const replacer of currentReplacers) {
+        if (replacer.replacerRegex.test(line.content)) {
+          // eslint-disable-next-line
+          line.content = (line.content as any).replaceAll(replacer.stringToBeReplaced, replacer.replacerString) as string;
+        }
+      }
+      return line;
+    });
+    if (removeEquLines) {
+      spliceIndeces.reverse().forEach(index => {
+        replacedLine.splice(index, 1);
+      });
+    }
+    return replacedLine;
   }
 
   private removeComment(line: LineWithBreakpoint): LineWithBreakpoint {
@@ -146,7 +180,7 @@ export default class Parser {
   }
 
   private applyBreakpointsToLines(splittedText: Array<string>, breakpoints: Array<number>): Array<LineWithBreakpoint> {
-    return splittedText.map((line, i) => ({ content: line, breakpoint: breakpoints.includes(i) }));
+    return splittedText.map((line, i) => ({ content: line, breakpoint: breakpoints.includes(i + 1) }));
   }
 }
 
@@ -169,6 +203,7 @@ export const parseExpression = (expression: string): number => {
   math.import({ divide: divide }, { override: true });
 
   return Number(math.evaluate(expression
+    .replace(literalRegex, match => match.charCodeAt(1).toString())
     .replace(binNumberRegex, match => parseInt(match.replace(/B/ig, ''), 2).toString())
     .replace(hexNumberRegex, match => parseInt(match.replace(/H/ig, ''), 16).toString())
     .replace(octNumberRegex, match => parseInt(match.replace(/O/ig, ''), 8).toString())

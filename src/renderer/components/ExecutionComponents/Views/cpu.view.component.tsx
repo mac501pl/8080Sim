@@ -53,7 +53,7 @@ export default function CPUView(props: CPUState): JSX.Element {
         </Row>
       </Container>
       <hr/>
-      <h6>SP: {SP} <span className="text-muted">({new HexNum(SP).toHex()}H)</span></h6>
+      <h6>SP: {SP.intValue} <span className="text-muted">({SP.toHex()}H)</span></h6>
       <h6>PC: {PC} <span className="text-muted">({new HexNum(PC).toHex()}H)</span></h6>
     </div>
   );

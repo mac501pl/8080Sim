@@ -136,7 +136,6 @@ module.exports = {
     'id-length': [ 'warn', { min: 1, max: 32 } ],
     'indent': [ 'warn', 'tab' ],
     'jsx-quotes': [ 'warn', 'prefer-double' ],
-    'linebreak-style': [ 'warn', 'unix' ],
     'lines-around-comment': [ 'warn', { beforeBlockComment: true } ],
     'max-depth': [ 'warn', 8 ],
     'max-nested-callbacks': [ 'warn', 8 ],

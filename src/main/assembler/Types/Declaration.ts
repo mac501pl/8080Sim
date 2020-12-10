@@ -1,9 +1,7 @@
 import { prettifyDeclaration, PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
-import { commaSeparatorRegex, declarationRegex, expressionRegex, number, textRegex } from '@utils/Regex';
+import { commaSeparatorRegex, declarationRegex, expressionRegex, strictNumber, textRegex } from '@utils/Regex';
 import { Label, parseExpression, parseToInt } from '../Parser';
 import HexNum from './HexNum';
-
-const strictNumberRegex = new RegExp(`^(${number})$`);
 
 type DeclarationTypes = 'DB' | 'DW' | 'DS';
 
@@ -25,14 +23,27 @@ export default class Declaration implements PrettyPrintable {
   }
 
   private parseArguments(arg: string, labels: Array<Label>): Array<HexNum> {
-    switch (this.type) {
+    switch (this.type.toUpperCase()) {
     case 'DB':
       return this.splitAndTrimArguments(arg).map(value => this.parse8Bit(value)).flat();
     case 'DW':
       return this.splitAndTrimArguments(arg).map(value => this.parse16Bit(value, labels)).flat(2);
+    case 'DS':
+      return this.defineStorage(arg.trim());
     default:
       throw new Error(`Invalid declaration type: ${this.type}`);
     }
+  }
+
+  private defineStorage(arg: string): Array<HexNum> {
+    if (strictNumber.exec(arg)) {
+      const value = parseToInt(arg);
+      return new Array<HexNum>(value).fill(new HexNum());
+    } else if (expressionRegex.exec(arg)) {
+      const value = parseExpression(arg);
+      return new Array<HexNum>(value).fill(new HexNum());
+    }
+    throw new Error(`Invalid DS argument: ${arg}\nDS expects an arithmetical or logical expression`);
   }
 
   private mapStringTo8BitHexNum(str: string): Array<HexNum> {
@@ -40,7 +51,7 @@ export default class Declaration implements PrettyPrintable {
   }
 
   private parse8Bit(value: string): Array<HexNum> | HexNum {
-    if (strictNumberRegex.exec(value)) {
+    if (strictNumber.exec(value)) {
       return new HexNum(parseToInt(value));
     } else if (textRegex.exec(value)) {
       return this.mapStringTo8BitHexNum(value);
@@ -59,7 +70,7 @@ export default class Declaration implements PrettyPrintable {
   }
 
   private parse16Bit(value: string, labels: Array<Label>): Array<[HexNum, HexNum]> | [HexNum, HexNum] {
-    if (strictNumberRegex.exec(value)) {
+    if (strictNumber.exec(value)) {
       return HexNum.to16Bit(parseToInt(value));
     } else if (textRegex.exec(value)) {
       return this.mapStringTo16BitHexNum(value);

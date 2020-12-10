@@ -1,4 +1,4 @@
-import { instructionRegex, declarationRegex, beginMacroRegex, endMacroRegex, labelRegex, commentRegex, commaSeparatorRegex } from '@utils/Regex';
+import { instructionRegex, declarationRegex, beginMacroRegex, endMacroRegex, labelRegex, commentRegex, commaSeparatorRegex, equRegex } from '@utils/Regex';
 import instructionList from '@/main/instruction_list';
 
 const validMnemonics = instructionList.map(instruction => instruction.mnemonic.toLowerCase());
@@ -42,6 +42,11 @@ export const prettifyLabel = (line: string): string => {
   return `${label.trim()}:`;
 };
 
+const prettifyEqu = (line: string): string => {
+  const { stringToBeReplaced, replacerString } = equRegex.exec(line).groups;
+  return `\t${stringToBeReplaced} EQU ${replacerString}`;
+};
+
 const prettifyMacro = (line: string): string => {
   const { name, paramsNumber } = beginMacroRegex.exec(line).groups;
   return `%macro ${name.trim()} ${paramsNumber.trim()}`;
@@ -59,27 +64,31 @@ const prettify = (code: string): string => code.split('\n')
   .filter(line => line)
   .map(line => {
     const prettyLine: Array<string> = [];
-    if (labelRegex.exec(line)) {
+    if (labelRegex.test(line)) {
       prettyLine.push(prettifyLabel(line));
     }
 
-    if (instructionRegex.exec(line)) {
+    if (equRegex.test(line)) {
+      prettyLine.push(prettifyEqu(line));
+    }
+
+    if (instructionRegex.test(line)) {
       prettyLine.push(prettifyInstruction(line));
     }
 
-    if (declarationRegex.exec(line)) {
+    if (declarationRegex.test(line)) {
       prettyLine.push(prettifyDeclaration(line));
     }
 
-    if (beginMacroRegex.exec(line)) {
+    if (beginMacroRegex.test(line)) {
       prettyLine.push(prettifyMacro(line));
     }
 
-    if (endMacroRegex.exec(line)) {
+    if (endMacroRegex.test(line)) {
       prettyLine.push(prettifyEndmacro());
     }
 
-    if (commentRegex.exec(line)) {
+    if (commentRegex.test(line)) {
       prettyLine.push(prettifyComment(line));
     }
 

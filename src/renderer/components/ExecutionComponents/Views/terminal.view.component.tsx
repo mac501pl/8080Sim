@@ -86,7 +86,7 @@ export default class TerminalView extends React.PureComponent<TerminalViewPropTy
           }
           break;
         case InputType.RST5:
-          if (lastInputLength < 4 && (/[1-9A-F]/i).exec(e)) {
+          if ((/[0-9A-FOBH]/i).exec(e)) {
             this.writeKey(e);
           }
           break;
@@ -110,7 +110,7 @@ export default class TerminalView extends React.PureComponent<TerminalViewPropTy
   }
 
   public writeError(str: string): void {
-    this.terminal.writeln(`\x1b[1;31m${str.split('\n').join('\n\r')}`);
+    this.terminal.writeln(`\x1b[1;31m${str.split('\n').join('\n\r')}\x1b[37m`);
   }
 
   public render(): JSX.Element {

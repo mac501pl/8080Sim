@@ -1,5 +1,5 @@
 import { prettifyInstruction, PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
-import { commaSeparatorRegex, expressionRegex, instructionRegex, literalRegex, number, registerOrMemoryRegex } from '@utils/Regex';
+import { commaSeparatorRegex, expressionRegex, instructionRegex, literalRegex, strictNumber, registerOrMemoryRegex } from '@utils/Regex';
 import { Label, parseExpression, parseToInt } from '../Parser';
 
 export class Operand {
@@ -13,6 +13,8 @@ export class Operand {
 }
 
 const STRICT_LITERAL = new RegExp(`^${literalRegex.source}$`, 'i');
+const STRICT_REGISTER = new RegExp(`^${registerOrMemoryRegex.source}$`, 'i');
+const STRICT_EXPRESSION = new RegExp(`^${expressionRegex.source}$`, 'i');
 
 export default class Instruction implements PrettyPrintable {
   public readonly mnemonic: string;
@@ -38,15 +40,15 @@ export default class Instruction implements PrettyPrintable {
   private parseOperands(operands: string, labels: Array<Label>): Array<Operand> {
     return this.splitAndTrimOperands(operands).map(operand => {
       const potentialLabel = labels.find(label => label.name === operand);
-      if (new RegExp(`^(${number})$`).exec(operand)) {
+      if (strictNumber.exec(operand)) {
         return new Operand(operand, parseToInt(operand));
       } else if (STRICT_LITERAL.exec(operand)) {
         return new Operand(operand, parseInt(String(operand.charCodeAt(1)), 10));
       } else if (potentialLabel) {
         return new Operand(operand, potentialLabel.value);
-      } else if (registerOrMemoryRegex.exec(operand)) {
+      } else if (STRICT_REGISTER.exec(operand)) {
         return new Operand(operand);
-      } else if (expressionRegex.exec(operand)) {
+      } else if (STRICT_EXPRESSION.exec(operand)) {
         const intValue = parseExpression(operand);
         if (isNaN(intValue)) {
           return new Operand(operand);

@@ -14,7 +14,7 @@ export interface MonarchLanguageConfiguration extends monaco.languages.IMonarchL
 export const languageDefinition = {
   ignoreCase: true,
   defaultToken: 'other',
-  mnemonics: instructionList.map(instruction => instruction.mnemonic),
+  mnemonics: instructionList.map(instruction => instruction.mnemonic).concat(['equ']),
   declarationKeywords: keywords.declarationKeywords,
   registerKeywords: keywords.registerKeywords,
   macroKeywords: keywords.macroKeywords,

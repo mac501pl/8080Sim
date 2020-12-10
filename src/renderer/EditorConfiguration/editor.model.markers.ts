@@ -1,4 +1,4 @@
-import { Label, ParsedLine } from '@/main/assembler/Parser';
+import Parser, { Label, ParsedLine } from '@/main/assembler/Parser';
 import Declaration from '@/main/assembler/Types/Declaration';
 import Instruction from '@/main/assembler/Types/Instruction';
 import instructionList, { IInstruction } from '@/main/instruction_list';
@@ -34,14 +34,16 @@ interface I8080MarkerData {
 
 const parseForSyntaxCheck = (text: string): Array<LineParsedForCheck> => {
   const splittedText = text.split('\n');
-  const labels = splittedText.map(line => {
+  const linesWithoutEqu = Parser.replaceEqu(splittedText.map(line => ({ content: line, breakpoint: false })), false).map(lineWithBreakpoint => lineWithBreakpoint.content);
+
+  const labels = linesWithoutEqu.map(line => {
     if (labelRegex.exec(line)) {
       return new Label(labelRegex.exec(line).groups.label);
     }
     return null;
   }).filter(n => n);
 
-  return splittedText.map((line, i) => {
+  return linesWithoutEqu.map((line, i) => {
     let label: Label, content: Declaration | Instruction, macro: LightMacro;
 
     try {
@@ -225,12 +227,20 @@ const noOperandTypemismatch = (parsedText: Array<LineParsedForCheck>): Array<I80
             message: `${instructionFromLine.mnemonic} does not expect an address or a numerical value for the operand at position ${i + 1}`
           });
         }
-        if (instructionFromLine.operands[i].intValue > 0xff && !intersects(['nn', 'a'], operands)) {
+        if (instructionFromLine.operands[i].intValue > 0xff && intersects(['n'], operands)) {
           markerData.push({
             lineNumber: line.lineNumber,
             startColumn: startColumn,
             endColumn: endColumn,
             message: `${instructionFromLine.mnemonic} does not expect an address or a 16 bit numerical value for the operand at position ${i + 1}`
+          });
+        }
+        if (instructionFromLine.operands[i].intValue > 0xffff && intersects(['nn', 'a'], operands)) {
+          markerData.push({
+            lineNumber: line.lineNumber,
+            startColumn: startColumn,
+            endColumn: endColumn,
+            message: `Operand at position ${i + 1} has a value greater than 0xFFFF which is not accepted here`
           });
         }
       } else if (!operands.includes(instructionFromLine.operands[i].value.toUpperCase()) && !variableRegex.exec(instructionFromLine.operands[i].value)) {

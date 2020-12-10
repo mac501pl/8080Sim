@@ -32,4 +32,6 @@ Thumbs.db
 
 # private test files
 assets/
+
 report.*
+out.zip

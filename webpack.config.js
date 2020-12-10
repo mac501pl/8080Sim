@@ -1,29 +1,34 @@
 const { merge } = require('webpack-merge');
 const CopyPkgJsonPlugin = require('copy-pkg-json-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');
+const MiniCssExtractPlugin = require('mini-css-extract-plugin');
+const TerserPlugin = require('terser-webpack-plugin');
 const MonacoWebpackPlugin = require('monaco-editor-webpack-plugin');
 const webpack = require('webpack');
 const path = require('path');
-const MiniCssExtractPlugin = require('mini-css-extract-plugin');
-const TerserPlugin = require('terser-webpack-plugin');
+
+function srcPaths(src) {
+  return path.resolve(__dirname, src);
+}
 
 const isEnvProduction = process.env.NODE_ENV === 'production';
 const isEnvDevelopment = process.env.NODE_ENV === 'development';
 
+// #region Common settings
 const commonConfig = {
   devtool: isEnvDevelopment ? 'source-map' : false,
   mode: isEnvProduction ? 'production' : 'development',
-  output: { path: path.resolve(__dirname, 'dist') },
+  output: { path: srcPaths('dist') },
   node: { __dirname: false, __filename: false },
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, 'src'),
-      '@main': path.resolve(__dirname, 'src/main'),
-      '@models': path.resolve(__dirname, 'src/models'),
-      '@public': path.resolve(__dirname, 'public'),
-      '@renderer': path.resolve(__dirname, 'src/renderer'),
-      '@utils': path.resolve(__dirname, 'src/utils'),
-      '@assets': path.resolve(__dirname, 'assets'),
+      '@': srcPaths('src'),
+      '@main': srcPaths('src/main'),
+      '@models': srcPaths('src/models'),
+      '@public': srcPaths('public'),
+      '@renderer': srcPaths('src/renderer'),
+      '@utils': srcPaths('src/utils'),
+      '@assets': srcPaths('assets'),
       'monaco-editor': 'monaco-editor/esm/vs/editor/editor.api'
     },
     extensions: ['.js', '.json', '.ts', '.tsx']
@@ -31,14 +36,7 @@ const commonConfig = {
   optimization: {
     minimize: true,
     minimizer: [
-      new TerserPlugin({
-        terserOptions: {
-          format: {
-            comments: false
-          }
-        },
-        extractComments: false
-      })
+      // new TerserPlugin()
     ]
   },
   module: {
@@ -58,6 +56,14 @@ const commonConfig = {
         include: /node_modules/,
         use: ['style-loader', 'css-loader']
       },
+      { test: /\.json$/, loader: 'json', include: '/assets/' },
+      {
+        test: /\.(jpg|png|svg|ico|icns)$/,
+        loader: 'file-loader',
+        options: {
+          name: '[path][name].[ext]'
+        }
+      },
       {
         test: /\.ttf$/,
         use: ['file-loader']
@@ -65,6 +71,7 @@ const commonConfig = {
     ]
   }
 };
+// #endregion
 
 const mainConfig = merge(commonConfig, {
   entry: './src/main/main.ts',
@@ -94,13 +101,12 @@ const rendererConfig = merge(commonConfig, {
     new HtmlWebpackPlugin({
       template: path.resolve(__dirname, './public/index.html')
     }),
+    new MiniCssExtractPlugin({
+      filename: '[name].css'
+    }),
     new MonacoWebpackPlugin({
       languages: []
-    }),
-    new webpack.DefinePlugin({
-      __REACT_DEVTOOLS_GLOBAL_HOOK__: '({ isDisabled: true })'
-    }),
-    new MiniCssExtractPlugin()
+    })
   ]
 });
 

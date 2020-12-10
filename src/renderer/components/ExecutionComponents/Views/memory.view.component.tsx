@@ -2,11 +2,11 @@ import * as React from 'react';
 import HexNum from '@main/assembler/Types/HexNum';
 import { Button, Form, OverlayTrigger, Table, Tooltip } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowDown, faArrowUp, faFont, faEdit, faBackspace } from '@fortawesome/free-solid-svg-icons';
-import { findInstructionSizeByOpcode, chunk } from '@utils/Utils';
+import { faArrowDown, faArrowUp, faFont, faEdit } from '@fortawesome/free-solid-svg-icons';
+import { findInstructionSizeByOpcode } from '@utils/Utils';
 
 interface MemoryViewProps {
-  assemblerOutput: Array<HexNum>;
+  code: Array<HexNum>;
   currentPC: number;
   updateAssemblerCode: (assemblerCode: Array<HexNum>) => void;
 }
@@ -15,11 +15,10 @@ interface MemoryViewState {
   displayAsAscii: boolean;
   memoryOffset: number;
   editing: boolean;
-  assemblerOutput: Array<HexNum>;
-  previousOutput: Array<HexNum>;
+  code: Array<HexNum>;
 }
 
-export default class MemoryView extends React.PureComponent<MemoryViewProps, MemoryViewState> {
+export default class MemoryView extends React.Component<MemoryViewProps, MemoryViewState> {
   private readonly numberOfVisibleLines: number;
   private readonly lineWidth: number;
 
@@ -27,8 +26,7 @@ export default class MemoryView extends React.PureComponent<MemoryViewProps, Mem
     displayAsAscii: false;
     memoryOffset: 0;
     editing: false;
-    assemblerOutput: Array<HexNum>;
-    previousOutput: Array<HexNum>;
+    code: Array<HexNum>;
   }
 
   public constructor(props: MemoryViewProps) {
@@ -41,8 +39,7 @@ export default class MemoryView extends React.PureComponent<MemoryViewProps, Mem
       displayAsAscii: false,
       memoryOffset: 0,
       editing: false,
-      assemblerOutput: props.assemblerOutput,
-      previousOutput: props.assemblerOutput
+      code: props.code
     };
   }
 
@@ -56,8 +53,8 @@ export default class MemoryView extends React.PureComponent<MemoryViewProps, Mem
     }
   }
 
-  private moveTableDown(paddedArrayLength: number): void {
-    if ((this.state.memoryOffset + this.numberOfVisibleLines) * this.lineWidth < paddedArrayLength) {
+  private moveTableDown(arrayLength: number): void {
+    if ((this.state.memoryOffset + this.numberOfVisibleLines) * this.lineWidth < arrayLength) {
       this.setState({ memoryOffset: this.state.memoryOffset + 1 });
     }
   }
@@ -66,8 +63,8 @@ export default class MemoryView extends React.PureComponent<MemoryViewProps, Mem
     return index >= this.props.currentPC && index < this.props.currentPC + currentInstructionSize;
   }
 
-  private canBeEdited(index: number, currentInstructionSize: number, assemblerOutputLength: number): boolean {
-    return index >= this.props.currentPC + currentInstructionSize && index < assemblerOutputLength;
+  private canBeEdited(index: number, currentInstructionSize: number): boolean {
+    return index >= this.props.currentPC + currentInstructionSize || index < this.props.currentPC;
   }
 
   private generateVerticalNumberHeaders(colIndex: number): string {
@@ -83,23 +80,10 @@ export default class MemoryView extends React.PureComponent<MemoryViewProps, Mem
 
   private updateMemoryCell(index: number, newValue: string): void {
     if (this.isValidHexNumber(newValue)) {
-      this.setState(({ assemblerOutput }) => ({
-        assemblerOutput: [
-          ...assemblerOutput.slice(0, index),
-          new HexNum(parseInt(newValue, 16)),
-          ...assemblerOutput.slice(index + 1)
-        ]
-      }));
+      const code = this.state.code;
+      code[index] = new HexNum(parseInt(newValue, 16));
+      this.props.updateAssemblerCode(code);
     }
-  }
-
-  private submitChanges(): void {
-    this.setState({ editing: false, previousOutput: this.state.assemblerOutput });
-    this.props.updateAssemblerCode(this.state.assemblerOutput);
-  }
-
-  private discardChanges(): void {
-    this.setState({ editing: false, assemblerOutput: this.state.previousOutput });
   }
 
   private calculateOneDimensionalIndexFromChunkedArray(colIndex: number, rowIndex: number): number {
@@ -110,14 +94,18 @@ export default class MemoryView extends React.PureComponent<MemoryViewProps, Mem
     return (/[0-9a-f]{1,2}/i).test(value);
   }
 
+  private chunk(array: Array<HexNum>): Array<Array<HexNum>> {
+    const result = [];
+    for (let i = 0; i < this.numberOfVisibleLines; i++) {
+      const begin = this.lineWidth * (i + this.state.memoryOffset);
+      const end = begin + this.lineWidth;
+      result.push(array.slice(begin, end));
+    }
+    return result;
+  }
+
   public render(): JSX.Element {
-    const assemblerOutputLength = this.props.assemblerOutput.length;
-    const paddingLength = Math.ceil(assemblerOutputLength / 0x100) * 0x100 - assemblerOutputLength;
-
-    const paddedArray = [...this.state.assemblerOutput, ...new Array<HexNum>(paddingLength).fill(new HexNum())];
-    const chunkedArray = chunk(paddedArray, this.lineWidth);
-
-    const currentlyDisplayedArray = chunkedArray.slice(this.state.memoryOffset, this.state.memoryOffset + this.numberOfVisibleLines);
+    const currentlyDisplayedArray = this.chunk(this.props.code);
 
     return (
       <div className="d-flex flex-row w-100 flex-fill">
@@ -132,9 +120,9 @@ export default class MemoryView extends React.PureComponent<MemoryViewProps, Mem
                   <td>{this.generateVerticalNumberHeaders(rowIndex)}</td>
                   {arrayChunk.map((value: HexNum, colIndex: number) => {
                     const index = this.calculateOneDimensionalIndexFromChunkedArray(colIndex, rowIndex);
-                    const currentInstruction = this.state.assemblerOutput[this.props.currentPC];
+                    const currentInstruction = this.props.code[this.props.currentPC];
                     const currentInstructionSize = currentInstruction ? findInstructionSizeByOpcode(currentInstruction) : 0;
-                    const editable = this.state.editing && !this.state.displayAsAscii && this.canBeEdited(index, currentInstructionSize, assemblerOutputLength);
+                    const editable = this.state.editing && !this.state.displayAsAscii && this.canBeEdited(index, currentInstructionSize);
                     return <td
                       className={currentInstruction && this.isCurrentInstruction(index, currentInstructionSize) ? 'text-dark bg-white' : ''}
                       key={rowIndex * this.lineWidth + colIndex}
@@ -173,30 +161,16 @@ export default class MemoryView extends React.PureComponent<MemoryViewProps, Mem
               overlay={(props): JSX.Element => <Tooltip id="button-tooltip" {...props}>{this.state.editing ? 'Stop editing' : 'Edit'}</Tooltip>}
             >
               <Button className="m-1" active={this.state.editing} variant="outline-light" onClick={(): void => {
-                if (this.state.editing) {
-                  this.submitChanges();
-                } else {
-                  this.setState({ editing: true });
-                }
+                this.setState({ editing: !this.state.editing });
               }}><FontAwesomeIcon icon={faEdit} /></Button>
             </OverlayTrigger>}
-            {
-              !this.state.displayAsAscii && this.state.editing &&
-              <OverlayTrigger
-                placement="left"
-                delay={{ show: 250, hide: 400 }}
-                overlay={(props): JSX.Element => <Tooltip id="button-tooltip" {...props}>Discard</Tooltip>}
-              >
-                <Button className="m-1" variant="outline-light" onClick={this.discardChanges.bind(this)}><FontAwesomeIcon icon={faBackspace} /></Button>
-              </OverlayTrigger>
-            }
           </div>
           <div className="d-flex flex-column">
             <Button className="m-1" variant="outline-light" onClick={(): void => {
               this.moveTableUp();
             }}><FontAwesomeIcon icon={faArrowUp} /></Button>
             <Button className="m-1" variant="outline-light" onClick={(): void => {
-              this.moveTableDown(paddedArray.length);
+              this.moveTableDown(this.props.code.length);
             }}><FontAwesomeIcon icon={faArrowDown} /></Button>
           </div>
         </div>
