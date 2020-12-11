@@ -3,7 +3,6 @@ import { CPUState } from '@/renderer/components/ExecutionComponents/cpu.componen
 import { Col, Container, Row } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faCircle, faDotCircle } from '@fortawesome/free-regular-svg-icons';
-import HexNum from '@/main/assembler/Types/HexNum';
 
 export default function CPUView(props: CPUState): JSX.Element {
   const { registers, SP, PC } = props;
@@ -54,7 +53,7 @@ export default function CPUView(props: CPUState): JSX.Element {
       </Container>
       <hr/>
       <h6>SP: {SP.intValue} <span className="text-muted">({SP.toHex()}H)</span></h6>
-      <h6>PC: {PC} <span className="text-muted">({new HexNum(PC).toHex()}H)</span></h6>
+      <h6>PC: {PC.intValue} <span className="text-muted">({PC.toHex()}H)</span></h6>
     </div>
   );
 }

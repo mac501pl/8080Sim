@@ -27,8 +27,8 @@ interface CPUMetaInfo {
 interface IntermediateState {
   registers: { A: Register, B: Register, C: Register, D: Register, E: Register, H: Register, L: Register };
   flags: FlagRegister;
-  PC: number;
-  previousPC: number;
+  PC: HexNum16;
+  previousPC: HexNum16;
   SP: HexNum16;
   code: Array<HexNum>;
 }
@@ -85,8 +85,8 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
       fillArray[i] = new HexNum();
     }
     return {
-      PC: 0,
-      previousPC: 0,
+      PC: new HexNum16(),
+      previousPC: new HexNum16(),
       registers: {
         A: new Register('A'),
         B: new Register('B'),
@@ -126,13 +126,13 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
   }
 
   private fetchByte(): HexNum {
-    return this.state.code[this.intermediateState.previousPC + 1];
+    return this.state.code[this.intermediateState.previousPC.intValue + 1];
   }
 
   private fetch2Bytes(): [HexNum, HexNum] {
     return [
-      this.state.code[this.intermediateState.previousPC + 1],
-      this.state.code[this.intermediateState.previousPC + 2]
+      this.state.code[this.intermediateState.previousPC.intValue + 1],
+      this.state.code[this.intermediateState.previousPC.intValue + 2]
     ];
   }
 
@@ -157,9 +157,9 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
   }
 
   private async executeNextInstruction(): Promise<void> {
-    const currentInstruction = findInstructionByOpCode(this.readCurrentInstruction(this.state.PC));
-    this.intermediateState.previousPC = this.intermediateState.PC;
-    this.intermediateState.PC += currentInstruction.size;
+    const currentInstruction = findInstructionByOpCode(this.readCurrentInstruction(this.state.PC.intValue));
+    this.intermediateState.previousPC.intValue = this.intermediateState.PC.intValue;
+    this.intermediateState.PC.intValue += currentInstruction.size;
     try {
       this.runInstruction(currentInstruction);
     } catch (e) {
@@ -168,14 +168,14 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     await this.setState({ ...this.intermediateState });
     if (this.state.executionMode === ExecutionMode.STEPS ||
-          (this.state.executionMode === ExecutionMode.DEBUG && this.isBreakpoint(this.state.PC))) {
+          (this.state.executionMode === ExecutionMode.DEBUG && this.isBreakpoint(this.state.PC.intValue))) {
       await this.setState({ isHalted: true });
     }
   }
 
   private runInstruction(instruction: IInstruction): void {
     const call = (): void => {
-      const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
+      const currentAddress = HexNum.to16Bit(this.intermediateState.PC.intValue);
       this.intermediateState.code[this.intermediateState.SP.intValue - 1 & 0xffff] = currentAddress[1];
       this.intermediateState.code[this.intermediateState.SP.intValue - 2 & 0xffff] = currentAddress[0];
       this.intermediateState.SP.intValue -= 2;
@@ -183,12 +183,12 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     };
 
     const ret = (): void => {
-      this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue & 0xffff], this.intermediateState.code[this.intermediateState.SP.intValue + 1 & 0xffff]]);
+      this.intermediateState.PC.intValue = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue & 0xffff], this.intermediateState.code[this.intermediateState.SP.intValue + 1 & 0xffff]]);
       this.intermediateState.SP.intValue += 2;
     };
 
     const jmp = (): void => {
-      this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+      this.intermediateState.PC.intValue = this.getNumberFromHexNumPair(this.fetch2Bytes());
     };
     switch (instruction.opCode) {
     // NOP
@@ -1705,7 +1705,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // PCHL
     case 0xe9: {
-      this.intermediateState.PC = this.getRegisterPair(this.intermediateState.registers.H, this.intermediateState.registers.L);
+      this.intermediateState.PC.intValue = this.getRegisterPair(this.intermediateState.registers.H, this.intermediateState.registers.L);
       break;
     }
     // JPE a
@@ -1820,7 +1820,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // SPHL
     case 0xf9: {
-      this.intermediateState.PC = this.getRegisterPair(this.intermediateState.registers.H, this.intermediateState.registers.L);
+      this.intermediateState.PC.intValue = this.getRegisterPair(this.intermediateState.registers.H, this.intermediateState.registers.L);
       break;
     }
     // JM a
@@ -1870,7 +1870,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
   public render(): JSX.Element {
     return (
       <div className="bg-dark text-white mw-100 mh-100 d-flex flex-column">
-        <MemoryView code={this.state.code} currentPC={this.state.PC} updateAssemblerCode={this.updateAssemblerCode.bind(this)} />
+        <MemoryView code={this.state.code} currentPC={this.state.PC.intValue} updateAssemblerCode={this.updateAssemblerCode.bind(this)} />
         <div className="d-flex flex-row flex-fill">
           <CPUView { ...this.state } />
           <TerminalView ref={this.terminalRef} acceptsInput={this.state.acceptInput} inputType={this.state.inputType} />
@@ -1892,7 +1892,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
             awaitInput={this.state.acceptInput}
           />
         </div>
-        <InstructionsView instructions={this.props.assemblerOutput} currentPC={this.state.PC} debug={this.props.mode === ExecutionMode.DEBUG}/>
+        <InstructionsView instructions={this.props.assemblerOutput} currentPC={this.state.PC.intValue} debug={this.props.mode === ExecutionMode.DEBUG}/>
       </div>
     );
   }
