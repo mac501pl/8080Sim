@@ -1,3 +1,5 @@
+// TODO zmiana konfiguracji webpacka
+
 const { merge } = require('webpack-merge');
 const CopyPkgJsonPlugin = require('copy-pkg-json-webpack-plugin');
 const HtmlWebpackPlugin = require('html-webpack-plugin');

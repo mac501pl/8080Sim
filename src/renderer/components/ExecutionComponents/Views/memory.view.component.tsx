@@ -1,9 +1,10 @@
 import * as React from 'react';
 import HexNum from '@main/assembler/Types/HexNum';
-import { Button, Form, OverlayTrigger, Table, Tooltip } from 'react-bootstrap';
+import { Button, Form, Overlay, OverlayTrigger, Table, Tooltip } from 'react-bootstrap';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faArrowDown, faArrowUp, faFont, faEdit } from '@fortawesome/free-solid-svg-icons';
+import { faArrowDown, faArrowUp, faFont, faEdit, faExchangeAlt } from '@fortawesome/free-solid-svg-icons';
 import { findInstructionSizeByOpcode } from '@utils/Utils';
+import { parseToInt } from '@/main/assembler/Parser';
 
 interface MemoryViewProps {
   code: Array<HexNum>;
@@ -15,17 +16,24 @@ interface MemoryViewState {
   displayAsAscii: boolean;
   memoryOffset: number;
   editing: boolean;
+  showInputTooltip: boolean;
+  locationToJumpTo: string;
+  isInputInvalid: boolean;
   code: Array<HexNum>;
 }
 
 export default class MemoryView extends React.Component<MemoryViewProps, MemoryViewState> {
   private readonly numberOfVisibleLines: number;
   private readonly lineWidth: number;
+  private readonly overlayTarget: React.RefObject<HTMLButtonElement>;
 
   public state: {
     displayAsAscii: false;
     memoryOffset: 0;
     editing: false;
+    showInputTooltip: false;
+    locationToJumpTo: '',
+    isInputInvalid: false,
     code: Array<HexNum>;
   }
 
@@ -35,10 +43,15 @@ export default class MemoryView extends React.Component<MemoryViewProps, MemoryV
     this.numberOfVisibleLines = 5;
     this.lineWidth = 0x10;
 
+    this.overlayTarget = React.createRef();
+
     this.state = {
       displayAsAscii: false,
       memoryOffset: 0,
       editing: false,
+      showInputTooltip: false,
+      locationToJumpTo: '',
+      isInputInvalid: false,
       code: props.code
     };
   }
@@ -92,6 +105,20 @@ export default class MemoryView extends React.Component<MemoryViewProps, MemoryV
 
   private isValidHexNumber(value: string): boolean {
     return (/[0-9a-f]{1,2}/i).test(value);
+  }
+
+  private jumpToLocation(): void {
+    try {
+      const location = parseToInt(this.state.locationToJumpTo);
+      let calculatedMemoryOffset = Math.floor(location / this.lineWidth);
+      const actualLocation = calculatedMemoryOffset * 0x10 + 0xf;
+      if (actualLocation > 0xffbf) {
+        calculatedMemoryOffset = 0xffb;
+      }
+      this.setState({ memoryOffset: calculatedMemoryOffset, locationToJumpTo: '', isInputInvalid: false, showInputTooltip: false });
+    } catch (e) {
+      this.setState({ isInputInvalid: true });
+    }
   }
 
   private chunk(array: Array<HexNum>): Array<Array<HexNum>> {
@@ -154,6 +181,32 @@ export default class MemoryView extends React.Component<MemoryViewProps, MemoryV
             >
               <Button className="m-1" variant="outline-light" onClick={this.changeToAscii.bind(this)}><FontAwesomeIcon icon={faFont} /></Button>
             </OverlayTrigger>
+            <Button ref={this.overlayTarget} className="m-1" variant="outline-light" onClick={(): void => {
+              this.setState({ showInputTooltip: !this.state.showInputTooltip
+              });
+            }}><FontAwesomeIcon icon={faExchangeAlt} /></Button>
+            <Overlay
+              placement="left"
+              show={this.state.showInputTooltip}
+              target={this.overlayTarget.current}
+
+            >
+              {({ placement, arrowProps, show: _show, popper, ...props }): JSX.Element => (
+                <div style={{ width: '30%' }} {...props}>
+                  <Form.Control
+                    onKeyPress={(event: React.KeyboardEvent): void => {
+                      if (event.key === 'Enter') {
+                        this.jumpToLocation();
+                      }
+                    }}
+                    autoFocus
+                    isInvalid={this.state.isInputInvalid}
+                    onChange={(e): void => this.setState({ locationToJumpTo: e.target.value })}
+                    size="lg"
+                    className="text-white bg-dark"></Form.Control>
+                </div>
+              )}
+            </Overlay>
             { !this.state.displayAsAscii &&
             <OverlayTrigger
               placement="left"
