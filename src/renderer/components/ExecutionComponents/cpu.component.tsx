@@ -171,6 +171,22 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
   }
 
   private runInstruction(instruction: IInstruction): void {
+    const call = (): void => {
+      const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
+      this.intermediateState.code[this.intermediateState.SP.intValue - 1] = currentAddress[1];
+      this.intermediateState.code[this.intermediateState.SP.intValue - 2] = currentAddress[0];
+      this.intermediateState.SP.intValue -= 2;
+      jmp();
+    };
+
+    const ret = (): void => {
+      this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue], this.intermediateState.code[this.intermediateState.SP.intValue + 1]]);
+      this.intermediateState.SP.intValue += 2;
+    };
+
+    const jmp = (): void => {
+      this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+    };
     switch (instruction.opCode) {
     // NOP
     case 0x00: {
@@ -1415,8 +1431,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // RNZ
     case 0xc0: {
       if (!this.intermediateState.flags.getZero()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue], this.intermediateState.code[this.intermediateState.SP.intValue + 1]]);
-        this.intermediateState.SP.intValue += 2;
+        ret();
       }
       break;
     }
@@ -1430,23 +1445,19 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // JNZ a
     case 0xc2: {
       if (!this.intermediateState.flags.getZero()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        jmp();
       }
       break;
     }
     // JMP a
     case 0xc3: {
-      this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+      jmp();
       break;
     }
     // CNZ a
     case 0xc4: {
       if (!this.intermediateState.flags.getZero()) {
-        const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
-        this.intermediateState.code[this.intermediateState.SP.intValue - 1] = currentAddress[1];
-        this.intermediateState.code[this.intermediateState.SP.intValue - 2] = currentAddress[0];
-        this.intermediateState.SP.intValue -= 2;
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        call();
       }
       break;
     }
@@ -1472,21 +1483,19 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // RZ
     case 0xc8: {
       if (this.intermediateState.flags.getZero()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue], this.intermediateState.code[this.intermediateState.SP.intValue + 1]]);
-        this.intermediateState.SP.intValue += 2;
+        ret();
       }
       break;
     }
     // RET
     case 0xc9: {
-      this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue], this.intermediateState.code[this.intermediateState.SP.intValue + 1]]);
-      this.intermediateState.SP.intValue += 2;
+      ret();
       break;
     }
     // JZ adr
     case 0xca: {
       if (this.intermediateState.flags.getZero()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        jmp();
       }
       break;
     }
@@ -1497,21 +1506,13 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // CZ adr
     case 0xcc: {
       if (this.intermediateState.flags.getZero()) {
-        const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
-        this.intermediateState.code[this.intermediateState.SP.intValue - 1] = currentAddress[1];
-        this.intermediateState.code[this.intermediateState.SP.intValue - 2] = currentAddress[0];
-        this.intermediateState.SP.intValue -= 2;
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        call();
       }
       break;
     }
     // CALL adr
     case 0xcd: {
-      const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
-      this.intermediateState.code[this.intermediateState.SP.intValue - 1] = currentAddress[1];
-      this.intermediateState.code[this.intermediateState.SP.intValue - 2] = currentAddress[0];
-      this.intermediateState.SP.intValue -= 2;
-      this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+      call();
       break;
     }
     // aci n
@@ -1529,8 +1530,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // RNC
     case 0xd0: {
       if (!this.intermediateState.flags.getCarry()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue], this.intermediateState.code[this.intermediateState.SP.intValue + 1]]);
-        this.intermediateState.SP.intValue += 2;
+        ret();
       }
       break;
     }
@@ -1544,7 +1544,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // JNC a
     case 0xd2: {
       if (!this.intermediateState.flags.getCarry()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        jmp();
       }
       break;
     }
@@ -1556,11 +1556,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // CNC a
     case 0xd4: {
       if (!this.intermediateState.flags.getCarry()) {
-        const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
-        this.intermediateState.code[this.intermediateState.SP.intValue - 1] = currentAddress[1];
-        this.intermediateState.code[this.intermediateState.SP.intValue - 2] = currentAddress[0];
-        this.intermediateState.SP.intValue -= 2;
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        call();
       }
       break;
     }
@@ -1595,8 +1591,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // RC
     case 0xd8: {
       if (this.intermediateState.flags.getCarry()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue], this.intermediateState.code[this.intermediateState.SP.intValue + 1]]);
-        this.intermediateState.SP.intValue += 2;
+        ret();
       }
       break;
     }
@@ -1607,7 +1602,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // JC a
     case 0xda: {
       if (this.intermediateState.flags.getCarry()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        jmp();
       }
       break;
     }
@@ -1619,11 +1614,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // CC a
     case 0xdc: {
       if (this.intermediateState.flags.getCarry()) {
-        const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
-        this.intermediateState.code[this.intermediateState.SP.intValue - 1] = currentAddress[1];
-        this.intermediateState.code[this.intermediateState.SP.intValue - 2] = currentAddress[0];
-        this.intermediateState.SP.intValue -= 2;
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        call();
       }
       break;
     }
@@ -1653,8 +1644,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // RPO
     case 0xe0: {
       if (!this.intermediateState.flags.getParity()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue], this.intermediateState.code[this.intermediateState.SP.intValue + 1]]);
-        this.intermediateState.SP.intValue += 2;
+        ret();
       }
       break;
     }
@@ -1668,7 +1658,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // JPO a
     case 0xe2: {
       if (!this.intermediateState.flags.getParity()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        jmp();
       }
       break;
     }
@@ -1684,11 +1674,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // CPO a
     case 0xe4: {
       if (!this.intermediateState.flags.getParity()) {
-        const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
-        this.intermediateState.code[this.intermediateState.SP.intValue - 1] = currentAddress[1];
-        this.intermediateState.code[this.intermediateState.SP.intValue - 2] = currentAddress[0];
-        this.intermediateState.SP.intValue -= 2;
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        call();
       }
       break;
     }
@@ -1714,8 +1700,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // RPE
     case 0xe8: {
       if (this.intermediateState.flags.getParity()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue], this.intermediateState.code[this.intermediateState.SP.intValue + 1]]);
-        this.intermediateState.SP.intValue += 2;
+        ret();
       }
       break;
     }
@@ -1727,7 +1712,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // JPE a
     case 0xea: {
       if (this.intermediateState.flags.getParity()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        jmp();
       }
       break;
     }
@@ -1741,11 +1726,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // CPE a
     case 0xec: {
       if (this.intermediateState.flags.getParity()) {
-        const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
-        this.intermediateState.code[this.intermediateState.SP.intValue - 1] = currentAddress[1];
-        this.intermediateState.code[this.intermediateState.SP.intValue - 2] = currentAddress[0];
-        this.intermediateState.SP.intValue -= 2;
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        call();
       }
       break;
     }
@@ -1782,8 +1763,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // RP
     case 0xf0: {
       if (!this.intermediateState.flags.getSign()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue], this.intermediateState.code[this.intermediateState.SP.intValue + 1]]);
-        this.intermediateState.SP.intValue += 2;
+        ret();
       }
       break;
     }
@@ -1797,7 +1777,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // JP a
     case 0xf2: {
       if (!this.intermediateState.flags.getSign()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        jmp();
       }
       break;
     }
@@ -1809,11 +1789,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // CP a
     case 0xf4: {
       if (!this.intermediateState.flags.getSign()) {
-        const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
-        this.intermediateState.code[this.intermediateState.SP.intValue - 1] = currentAddress[1];
-        this.intermediateState.code[this.intermediateState.SP.intValue - 2] = currentAddress[0];
-        this.intermediateState.SP.intValue -= 2;
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        call();
       }
       break;
     }
@@ -1839,8 +1815,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // RM
     case 0xf8: {
       if (this.intermediateState.flags.getSign()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair([this.intermediateState.code[this.intermediateState.SP.intValue], this.intermediateState.code[this.intermediateState.SP.intValue + 1]]);
-        this.intermediateState.SP.intValue += 2;
+        ret();
       }
       break;
     }
@@ -1852,7 +1827,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // JM a
     case 0xfa: {
       if (this.intermediateState.flags.getSign()) {
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        jmp();
       }
       break;
     }
@@ -1864,11 +1839,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     // CM a
     case 0xfc: {
       if (this.intermediateState.flags.getSign()) {
-        const currentAddress = HexNum.to16Bit(this.intermediateState.PC);
-        this.intermediateState.code[this.intermediateState.SP.intValue - 1] = currentAddress[1];
-        this.intermediateState.code[this.intermediateState.SP.intValue - 2] = currentAddress[0];
-        this.intermediateState.SP.intValue -= 2;
-        this.intermediateState.PC = this.getNumberFromHexNumPair(this.fetch2Bytes());
+        call();
       }
       break;
     }
