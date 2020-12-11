@@ -61,7 +61,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
   }
 
   private restart(): void {
-    this.terminalRef.current.terminal.clear();
+    this.terminalRef.current.terminal.write('\n\n\n\n\r--------------------------------------RESET--------------------------------------\n\r');
     this.intermediateState = this.initializeIntermediateState();
     const initialMetaState = this.initializeMetaState();
     this.setState({ ...this.intermediateState, ...initialMetaState, isHalted: false });
