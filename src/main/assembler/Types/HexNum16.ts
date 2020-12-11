@@ -6,7 +6,7 @@ export default class HexNum16 {
   }
 
   public get intValue(): number {
-    return this._intValue;
+    return this._intValue & 0xffff;
   }
 
   public set intValue(value: number) {
