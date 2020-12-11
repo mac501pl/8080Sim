@@ -9,7 +9,7 @@ import TerminalView, { InputType } from '@renderer/components/ExecutionComponent
 import CPUView from '@renderer/components/ExecutionComponents/Views/cpu.view.component';
 import MemoryView from '@renderer/components/ExecutionComponents/Views/memory.view.component';
 import InstructionsView from '@renderer/components/ExecutionComponents/Views/instructions.view.component';
-import { ExecutionMode } from '@renderer/components/app';
+import { ExecutionMode } from '@renderer/components/App';
 import Instruction from '@/main/assembler/Types/Instruction';
 import ControlButtons from '@renderer/components/ExecutionComponents/control.buttons.component';
 import { AssembleError, LinesWithOpcodes } from '@main/assembler/assemble';

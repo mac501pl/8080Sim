@@ -1,6 +1,6 @@
 import * as React from 'react';
 import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
-import { ExecutionMode } from '@renderer/components/app';
+import { ExecutionMode } from '@renderer/components/App';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faPlay, faStepForward, faUndoAlt } from '@fortawesome/free-solid-svg-icons';
 
