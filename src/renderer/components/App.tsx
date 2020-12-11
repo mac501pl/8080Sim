@@ -4,7 +4,7 @@ import Parser from '@main/assembler/Parser';
 import assemble, { AssembleError, LinesWithOpcodes } from '@main/assembler/assemble';
 import Editor from './EditorComponents/editor.component';
 import CPU from '@/renderer/components/ExecutionComponents/cpu.component';
-import { remote } from 'electron';
+import { ipcRenderer, remote } from 'electron';
 import ExecuteButtons from '@renderer/components/EditorComponents/execute.buttons.component';
 import * as fs from 'fs';
 
@@ -62,6 +62,8 @@ export default class App extends React.PureComponent {
     } catch (e) {
       this.setState({ assemblerOutput: [], isExecuting: true, executionMode: ExecutionMode.RUN, assembleError: e as AssembleError });
     }
+
+    ipcRenderer.send('executing', true);
   }
 
   private build(): void {

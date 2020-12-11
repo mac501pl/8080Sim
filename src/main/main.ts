@@ -188,6 +188,10 @@ function createMainWindow(): void {
     fsHandler.modified = fsHandler.previouslySavedFile !== args as string;
     mainWindow.setTitle(`${fsHandler.modified ? fsHandler.modifiedIndicator : ''}${fsHandler.mainWindowTitle}`);
   });
+
+  ipcMain.on('executing', (_event, args) => {
+    mainWindow.setMenuBarVisibility(!(args as boolean));
+  });
 }
 
 app.on('ready', createMainWindow);

@@ -3,6 +3,7 @@ import { Button, OverlayTrigger, Tooltip } from 'react-bootstrap';
 import { ExecutionMode } from '@renderer/components/App';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft, faPlay, faStepForward, faUndoAlt } from '@fortawesome/free-solid-svg-icons';
+import { ipcRenderer } from 'electron';
 
 interface ControlButtonsPropTypes {
   executionEnded: boolean;
@@ -45,6 +46,7 @@ export default function ControlButtons({ executionEnded, mode, resumeExecution, 
     >
       <Button className="m-1" variant="outline-light" onClick={(): void => {
         setParentState({ isExecuting: false });
+        ipcRenderer.send('executing', false);
       }}><FontAwesomeIcon icon={faChevronLeft}/></Button>
     </OverlayTrigger>
     { mode !== ExecutionMode.RUN && <OverlayTrigger
