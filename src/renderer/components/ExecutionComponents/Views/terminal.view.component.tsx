@@ -50,7 +50,7 @@ export default class TerminalView extends React.PureComponent<TerminalViewPropTy
   }
 
   public writeKeys(keys: string): void {
-    this.terminal.writeln(keys);
+    this.terminal.write(keys);
   }
 
   public componentDidMount(): void {
