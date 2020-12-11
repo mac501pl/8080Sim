@@ -211,7 +211,7 @@ export default class MemoryView extends React.Component<MemoryViewProps, MemoryV
             <OverlayTrigger
               placement="left"
               delay={{ show: 250, hide: 400 }}
-              overlay={(props): JSX.Element => <Tooltip id="button-tooltip" {...props}>{this.state.editing ? 'Stop editing' : 'Edit'}</Tooltip>}
+              overlay={(props): JSX.Element => <Tooltip id="button-tooltip" {...props}>{this.state.editing ? 'Stop editing memory' : 'Edit memory'}</Tooltip>}
             >
               <Button className="m-1" active={this.state.editing} variant="outline-light" onClick={(): void => {
                 this.setState({ editing: !this.state.editing });
