@@ -24,7 +24,15 @@ export default class InstructionsView extends React.PureComponent<InstructionVie
     super(props);
     this.filteredInstructions = props.instructions.filter((entry, index, arr) => {
       const { line: { content, label } } = entry;
-      return content instanceof Instruction ? true : label ? !(arr[index + 1]?.line.content instanceof Declaration || !arr[index + 1]) : false;
+      if (content instanceof Instruction) {
+        return true;
+      } else if (content instanceof Declaration) {
+        return false;
+      }
+      if (label) {
+        return !(arr[index + 1]?.line.content instanceof Declaration || !arr[index + 1]);
+      }
+      return false;
     });
     this.state = {
       offset: 0
