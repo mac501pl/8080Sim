@@ -28,6 +28,9 @@ export default class Editor extends React.PureComponent<EditorPropTypes, EditorS
   private breakpoints: Array<number>;
   private monacoEditor: monacoEditor.editor.IStandaloneCodeEditor;
   private monaco: typeof monacoEditor;
+  private monarchTokensProvider: monacoEditor.IDisposable;
+  private completionItemProvider: monacoEditor.IDisposable;
+  private documentFormattingEditProvider: monacoEditor.IDisposable;
 
   public constructor(props: EditorPropTypes) {
     super(props);
@@ -52,6 +55,9 @@ export default class Editor extends React.PureComponent<EditorPropTypes, EditorS
     ipcRenderer.removeAllListeners('open');
     ipcRenderer.removeAllListeners('autoformat');
     window.removeEventListener('resize', this.handleResize);
+    this.monarchTokensProvider.dispose();
+    this.completionItemProvider.dispose();
+    this.documentFormattingEditProvider.dispose();
   }
 
   public componentDidMount(): void {
@@ -102,10 +108,10 @@ export default class Editor extends React.PureComponent<EditorPropTypes, EditorS
 
   public editorWillMount(monaco: typeof monacoEditor): void {
     monaco.languages.register({ id: this.languageId });
-    monaco.languages.setMonarchTokensProvider(this.languageId, languageDefinition as MonarchLanguageConfiguration);
-    monaco.languages.registerCompletionItemProvider(this.languageId, completionItemProvider);
+    this.monarchTokensProvider = monaco.languages.setMonarchTokensProvider(this.languageId, languageDefinition as MonarchLanguageConfiguration);
+    this.completionItemProvider = monaco.languages.registerCompletionItemProvider(this.languageId, completionItemProvider);
     monaco.editor.defineTheme(this.themeId, theme as editor.IStandaloneThemeData);
-    monaco.languages.registerDocumentFormattingEditProvider(this.languageId, {
+    this.documentFormattingEditProvider = monaco.languages.registerDocumentFormattingEditProvider(this.languageId, {
       provideDocumentFormattingEdits: model => [{
         text: prettify(model.getValue()),
         range: model.getFullModelRange()
