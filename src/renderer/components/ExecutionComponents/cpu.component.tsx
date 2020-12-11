@@ -1476,7 +1476,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // RST 0
     case 0xc7: {
-      // TODO
+      // CAN BE USER DEFINED
       break;
     }
     // RZ
@@ -1498,7 +1498,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
       }
       break;
     }
-    // --
+    // USER DEFINED
     case 0xcb: {
       break;
     }
@@ -1549,7 +1549,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // OUT n
     case 0xd3: {
-      // TODO
+      // CAN BE USER DEFINED
       break;
     }
     // CNC a
@@ -1594,7 +1594,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
       }
       break;
     }
-    // --
+    // USER DEFINED
     case 0xd9: {
       break;
     }
@@ -1607,7 +1607,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // IN n
     case 0xdb: {
-      // TODO
+      // CAN BE USER DEFINED
       break;
     }
     // CC a
@@ -1617,7 +1617,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
       }
       break;
     }
-    // --
+    // USER DEFINED
     case 0xdd: {
       break;
     }
@@ -1729,7 +1729,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
       }
       break;
     }
-    // --
+    // USER DEFINED
     case 0xed: {
       break;
     }
@@ -1782,7 +1782,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // DI
     case 0xf3: {
-      // TODO
+      // CAN BE USER DEFINED
       break;
     }
     // CP a
@@ -1808,7 +1808,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // RST 6
     case 0xf7: {
-      // todo
+      // CAN BE USER DEFINED
       break;
     }
     // RM
@@ -1832,7 +1832,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // EI
     case 0xfb: {
-      // TODO
+      // CAN BE USER DEFINED
       break;
     }
     // CM a
@@ -1842,7 +1842,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
       }
       break;
     }
-    // --
+    // USER DEFINED
     case 0xfd: {
       break;
     }
@@ -1854,7 +1854,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // RST 7
     case 0xff: {
-      // TODO
+      // CAN BE USER DEFINED
       break;
     }
     default: {
