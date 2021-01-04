@@ -12,7 +12,7 @@ import InstructionsView from '@renderer/components/ExecutionComponents/Views/ins
 import { ExecutionMode } from '@renderer/components/App';
 import Instruction from '@/main/assembler/Types/Instruction';
 import ControlButtons from '@renderer/components/ExecutionComponents/control.buttons.component';
-import { AssembleError, LinesWithOpcodes } from '@main/assembler/assemble';
+import { LinesWithOpcodes } from '@main/assembler/assemble';
 import HexNum16 from '@/main/assembler/Types/HexNum16';
 import { parseToInt } from '@/main/assembler/Parser';
 
@@ -41,7 +41,7 @@ export interface CPUProps {
   assemblerOutput: Array<LinesWithOpcodes>;
   mode: ExecutionMode;
   changeExecutingState: (state: { isExecuting: boolean; }) => void;
-  error?: AssembleError;
+  error?: Error;
 }
 
 export default class CPU extends React.Component<CPUProps, CPUState> {
@@ -104,12 +104,8 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
 
   public componentDidMount(): void {
     if (this.props.error) {
-      const { message, instruction, stack } = this.props.error;
-      this.terminalRef.current.writeError(`Assemble error, please check your source code (if the error is related to an instruction, it will be shown below): ${message}`);
-      if (instruction) {
-        this.terminalRef.current.writeError(instruction.prettyPrint());
-      }
-      this.terminalRef.current.writeError(stack);
+      const { message } = this.props.error;
+      this.terminalRef.current.writeError(`Assemble error, please check your source code\n\r${message}`);
       this.setState({ isHalted: true, executionEnded: true });
     }
 

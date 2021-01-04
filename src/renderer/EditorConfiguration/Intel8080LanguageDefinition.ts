@@ -1,5 +1,4 @@
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
-import instructionList from '@/main/instruction_list';
 import { number } from '@utils/Regex';
 import keywords from './keywords';
 
@@ -14,7 +13,8 @@ export interface MonarchLanguageConfiguration extends monaco.languages.IMonarchL
 export const languageDefinition = {
   ignoreCase: true,
   defaultToken: 'other',
-  mnemonics: instructionList.map(instruction => instruction.mnemonic).concat(['equ']),
+  mnemonics: keywords.mnemonicKeywords,
+  pseudoInstructions: keywords.pseudoInstructionKeywords,
   declarationKeywords: keywords.declarationKeywords,
   registerKeywords: keywords.registerKeywords,
   macroKeywords: keywords.macroKeywords,
@@ -29,6 +29,7 @@ export const languageDefinition = {
         { cases:
           {
             '@mnemonics': 'mnemonic',
+            '@pseudoInstructions': 'mnemonic',
             '@declarationKeywords': 'declaration',
             '@registerKeywords': 'register',
             '@macroKeywords': 'macro',

@@ -2,10 +2,16 @@ export default class HexNum {
   private _intValue: number;
 
   public constructor(value?: number) {
+    if (value > 0xff) {
+      throw new Error('Value should not be greater than 0xff');
+    }
     this._intValue = value ? value & 0xff : 0;
   }
 
   public static to16Bit(value = 0): [HexNum, HexNum] {
+    if (value > 0xffff) {
+      throw new Error('Value should not be greater than 0xffff');
+    }
     return [new HexNum(value & 0xff), new HexNum(value >>> 0x8)];
   }
 

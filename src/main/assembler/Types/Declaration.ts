@@ -1,6 +1,6 @@
 import { prettifyDeclaration, PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
 import { commaSeparatorRegex, declarationRegex, expressionRegex, strictNumber, textRegex } from '@utils/Regex';
-import { Label, parseExpression, parseToInt } from '../Parser';
+import Parser, { Label, parseExpression, parseToInt } from '../Parser';
 import HexNum from './HexNum';
 
 type DeclarationTypes = 'DB' | 'DW' | 'DS';
@@ -9,10 +9,11 @@ export default class Declaration implements PrettyPrintable {
   public readonly type: DeclarationTypes;
   public readonly list: Array<HexNum>;
   public readonly line: string;
+  public readonly address: number;
 
-  public constructor(line: string, labels = [] as Array<Label>) {
+  public constructor(line: string, labels = [] as Array<Label>, address = 0) {
     const { type, arg } = declarationRegex.exec(line).groups;
-
+    this.address = address;
     this.type = type as DeclarationTypes;
     this.list = this.parseArguments(arg, labels);
     this.line = line;
@@ -22,14 +23,18 @@ export default class Declaration implements PrettyPrintable {
     return arg.split(commaSeparatorRegex).map(value => value.trim());
   }
 
+  private prepareArgument(arg: string): Array<string> {
+    return this.splitAndTrimArguments(arg).map(_arg => Parser.replaceDollar(_arg, this.address));
+  }
+
   private parseArguments(arg: string, labels: Array<Label>): Array<HexNum> {
     switch (this.type.toUpperCase()) {
     case 'DB':
-      return this.splitAndTrimArguments(arg).map(value => this.parse8Bit(value)).flat();
+      return this.prepareArgument(arg).map(value => this.parse8Bit(value)).flat();
     case 'DW':
-      return this.splitAndTrimArguments(arg).map(value => this.parse16Bit(value, labels)).flat(2);
+      return this.prepareArgument(arg).map(value => this.parse16Bit(value, labels)).flat(2);
     case 'DS':
-      return this.defineStorage(arg.trim());
+      return this.defineStorage(Parser.replaceDollar(arg.trim(), this.address));
     default:
       throw new Error(`Invalid declaration type: ${this.type}`);
     }
@@ -78,7 +83,7 @@ export default class Declaration implements PrettyPrintable {
       return HexNum.to16Bit(parseExpression(value));
     } else if (this.isIncludedInLabelList(value, labels)) {
       const label = labels.find(_label => _label.name.toLowerCase() === value.toLowerCase());
-      return HexNum.to16Bit(label.value);
+      return HexNum.to16Bit(label.address);
     }
     return HexNum.to16Bit();
   }

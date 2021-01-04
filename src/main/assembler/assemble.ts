@@ -4,15 +4,6 @@ import { IInstruction } from '@/main/instruction_list';
 import { ParsedLine } from './Parser';
 import Instruction from './Types/Instruction';
 import Declaration from './Types/Declaration';
-import { CustomError } from 'ts-custom-error';
-
-export class AssembleError extends CustomError {
-  public message: string;
-  public constructor(public instruction?: Instruction) {
-    super();
-    this.instruction = instruction;
-  }
-}
 
 export interface LinesWithOpcodes {
   line: ParsedLine;
@@ -21,26 +12,28 @@ export interface LinesWithOpcodes {
 
 const assemble = (parserOutput: Array<ParsedLine>): Array<LinesWithOpcodes> => parserOutput.map(line => {
   if (line.content) {
-    if (line.content instanceof Instruction) {
-      try {
-        const desiredInstruction: IInstruction = findInstruction(line.content);
+    const content = line.content;
+    try {
+      if (content instanceof Instruction) {
+        const desiredInstruction: IInstruction = findInstruction(content);
         return {
           line: line,
           bytes: [new HexNum(desiredInstruction.opCode)]
             .concat(desiredInstruction.operands.map((operand, i) => {
+              const operandIntValue = content.operands[i].intValue;
               if (['n'].includes(operand)) {
-                return new HexNum((line.content as Instruction).operands[i].intValue);
+                return new HexNum(operandIntValue);
               } else if (['nn', 'a'].includes(operand)) {
-                return HexNum.to16Bit((line.content as Instruction).operands[i].intValue);
+                return HexNum.to16Bit(operandIntValue);
               }
-              return undefined;
+              return null;
             }).flat().filter(value => value))
         };
-      } catch (e) {
-        throw new AssembleError(line.content);
+      } else if (line.content instanceof Declaration) {
+        return { line: line, bytes: line.content.list };
       }
-    } else if (line.content instanceof Declaration) {
-      return { line: line, bytes: line.content.list };
+    } catch (e) {
+      throw new Error(`${(e as Error).message}\r\n\t${line.content.prettyPrint()}`);
     }
   }
   return { line: line, bytes: [] };

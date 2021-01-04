@@ -1,7 +1,7 @@
 import * as React from 'react';
 import { createRef, ReactPropTypes } from 'react';
 import Parser from '@main/assembler/Parser';
-import assemble, { AssembleError, LinesWithOpcodes } from '@main/assembler/assemble';
+import assemble, { LinesWithOpcodes } from '@main/assembler/assemble';
 import Editor from './EditorComponents/editor.component';
 import CPU from '@/renderer/components/ExecutionComponents/cpu.component';
 import { ipcRenderer, remote } from 'electron';
@@ -20,7 +20,7 @@ export interface AppStateType {
   code: string;
   breakpoints: Array<number>;
   assemblerOutput: Array<LinesWithOpcodes>;
-  assembleError: AssembleError;
+  assembleError: Error;
 }
 
 export default class App extends React.PureComponent {
@@ -60,7 +60,7 @@ export default class App extends React.PureComponent {
     try {
       this.setState({ assemblerOutput: this.assemble(), isExecuting: true, executionMode: mode, assembleError: null });
     } catch (e) {
-      this.setState({ assemblerOutput: [], isExecuting: true, executionMode: ExecutionMode.RUN, assembleError: e as AssembleError });
+      this.setState({ assemblerOutput: [], isExecuting: true, executionMode: ExecutionMode.RUN, assembleError: e as Error });
     }
 
     ipcRenderer.send('executing', true);

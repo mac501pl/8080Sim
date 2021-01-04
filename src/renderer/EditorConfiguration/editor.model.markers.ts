@@ -1,12 +1,14 @@
-import Parser, { Label, ParsedLine } from '@/main/assembler/Parser';
+import Parser, { Label, LineContentType, ParsedLine } from '@/main/assembler/Parser';
 import Declaration from '@/main/assembler/Types/Declaration';
 import Instruction from '@/main/assembler/Types/Instruction';
+import PseudoInstruction from '@/main/assembler/Types/PseudoInstruction';
 import instructionList, { IInstruction } from '@/main/instruction_list';
-import { beginMacroRegex, declarationRegex, endMacroRegex, instructionRegex, labelRegex, variableRegex } from '@/utils/Regex';
+import { beginMacroRegex, declarationRegex, endMacroRegex, instructionRegex, labelRegex, pseudoInstructionRegex, variableRegex } from '@/utils/Regex';
 import { isNumber } from '@/utils/Utils';
 import { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { CustomError } from 'ts-custom-error';
+import keywords from './keywords';
 
 class ParseError extends CustomError {
   public constructor(public lineNumber: number, public message: string) {
@@ -24,6 +26,7 @@ interface LineParsedForCheck extends ParsedLine {
 }
 
 type Check = (parsedText: Array<LineParsedForCheck>) => Array<I8080MarkerData>;
+type CheckBeforeParse = (text: Array<string>) => Array<I8080MarkerData>;
 
 interface I8080MarkerData {
   lineNumber: number;
@@ -34,7 +37,7 @@ interface I8080MarkerData {
 
 const parseForSyntaxCheck = (text: string): Array<LineParsedForCheck> => {
   const splittedText = text.split('\n');
-  const linesWithoutEqu = Parser.replaceEqu(splittedText.map(line => ({ content: line, breakpoint: false })), false).map(lineWithBreakpoint => lineWithBreakpoint.content);
+  const linesWithoutEqu = Parser.replaceDirectives(splittedText.map(line => ({ content: line, breakpoint: false })), false).map(lineWithBreakpoint => lineWithBreakpoint.content);
 
   const labels = linesWithoutEqu.map(line => {
     if (labelRegex.exec(line)) {
@@ -44,18 +47,18 @@ const parseForSyntaxCheck = (text: string): Array<LineParsedForCheck> => {
   }).filter(n => n);
 
   return linesWithoutEqu.map((line, i) => {
-    let label: Label, content: Declaration | Instruction, macro: LightMacro;
+    let label: Label, content: LineContentType, macro: LightMacro;
 
     try {
       if (labelRegex.exec(line)) {
         label = labels.find(_label => _label.name === labelRegex.exec(line).groups.label);
       }
 
-      if (instructionRegex.exec(line)) {
+      if (pseudoInstructionRegex.test(line)) {
+        content = new PseudoInstruction(line);
+      } else if (instructionRegex.test(line)) {
         content = new Instruction(line, 0, false, labels);
-      }
-
-      if (declarationRegex.exec(line)) {
+      } else if (declarationRegex.test(line)) {
         content = new Declaration(line, labels);
       }
 
@@ -178,6 +181,27 @@ const noMacroOperandsNumberMismatch = (parsedText: Array<LineParsedForCheck>): A
   return markerData;
 };
 
+const noMisusedEqu = (text: Array<string>): Array<I8080MarkerData> => {
+  const linesWithEqus = text.map((line, i) => ({ content: line, lineNumber: i })).filter(line => pseudoInstructionRegex.test(line.content)).map(line => ({ rawLine: line.content, pseudoInstruction: new PseudoInstruction(line.content), lineNumber: line.lineNumber })).filter(line => line.pseudoInstruction.op.toUpperCase() === 'EQU');
+  const markerData: Array<I8080MarkerData> = [];
+  const equs: Array<string> = [];
+  for (const line of linesWithEqus) {
+    const name = line.pseudoInstruction.name;
+    if (equs.includes(name)) {
+      const match = pseudoInstructionRegex.exec(line.rawLine);
+      const [startColumn, endColumn] = getColumnIndeces(match.groups.name, line.rawLine);
+      markerData.push({
+        lineNumber: line.lineNumber,
+        startColumn: startColumn,
+        endColumn: endColumn,
+        message: 'This equ name was already declared\nEqus can\'t be redeclared. Use SET pseudoinstruction instead'
+      });
+    }
+    equs.push(name);
+  }
+  return markerData;
+};
+
 const noClosedMacro = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
   const linesWithMacros = parsedText.filter(line => line.macro);
   const markerData: Array<I8080MarkerData> = [];
@@ -257,14 +281,16 @@ const noOperandTypemismatch = (parsedText: Array<LineParsedForCheck>): Array<I80
 };
 
 const noUnknownMnemonicsOrMacros = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
-  const mnemonics = [...new Set(instructionList.map(instruction => instruction.mnemonic))];
+  const mnemonics = keywords.mnemonicKeywords;
   const macros = parsedText.filter(line => line.macro).map(line => line.macro.name);
+  const pseudoInstructions = keywords.pseudoInstructionKeywords;
+  const acceptedKeywords = [...mnemonics, ...macros, ...pseudoInstructions].map(keyword => keyword.toUpperCase());
   const linesWithInstructions = parsedText.filter(line => line.content instanceof Instruction);
   const markerData: Array<I8080MarkerData> = [];
 
   for (const line of linesWithInstructions) {
     const mnemonic = (line.content as Instruction).mnemonic.trim();
-    if (!mnemonics.includes(mnemonic.toUpperCase()) && !macros.includes(mnemonic)) {
+    if (!acceptedKeywords.includes(mnemonic.toUpperCase())) {
       const match = instructionRegex.exec(line.rawLine);
       const [startColumn, endColumn] = getColumnIndeces(match.groups.mnemonic, line.rawLine);
       markerData.push({
@@ -280,7 +306,7 @@ const noUnknownMnemonicsOrMacros = (parsedText: Array<LineParsedForCheck>): Arra
 
 const noInvalidMacroNames = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
   const linesWithMacros = parsedText.filter(line => line.macro);
-  const mnemonics = [...new Set(instructionList.map(instruction => instruction.mnemonic))];
+  const mnemonics = keywords.mnemonicKeywords;
   const markerData: Array<I8080MarkerData> = [];
   for (const lineWithMacro of linesWithMacros) {
     if (mnemonics.includes(lineWithMacro.macro.name.toUpperCase())) {
@@ -315,12 +341,22 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
     return [mapToMonacoMarkerData({
       lineNumber: error.lineNumber,
       startColumn: 0,
-      endColumn: value.split('\n')[error.lineNumber].length,
+      endColumn: value.split('\n')[error.lineNumber].length + 1,
       message: `Parse error: ${error.message}`
     })];
   }
-  const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noClosedMacro, noMissingHlt, noInvalidMacroNames];
   const markerDataToShow: Array<I8080MarkerData> = [];
+  const checksBeforeParse: Array<CheckBeforeParse> = [noMisusedEqu];
+  for (const check of checksBeforeParse) {
+    try {
+      const markerData = check(value.split('\n'));
+      if (markerData.length > 0) {
+        markerDataToShow.push(...markerData);
+      }
+    // eslint-disable-next-line no-empty
+    } catch (e) {}
+  }
+  const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noClosedMacro, noMissingHlt, noInvalidMacroNames];
   for (const check of checks) {
     try {
       const markerData = check(parsedText);

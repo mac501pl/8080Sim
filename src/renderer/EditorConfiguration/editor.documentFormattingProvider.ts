@@ -1,5 +1,5 @@
-import { instructionRegex, declarationRegex, beginMacroRegex, endMacroRegex, labelRegex, commentRegex, commaSeparatorRegex, equRegex } from '@utils/Regex';
-import instructionList from '@/main/instruction_list';
+import { instructionRegex, declarationRegex, beginMacroRegex, endMacroRegex, labelRegex, commentRegex, commaSeparatorRegex, pseudoInstructionRegex } from '@utils/Regex';
+import instructionList from '@main/instruction_list';
 
 const validMnemonics = instructionList.map(instruction => instruction.mnemonic.toLowerCase());
 
@@ -42,9 +42,9 @@ export const prettifyLabel = (line: string): string => {
   return `${label.trim()}:`;
 };
 
-const prettifyEqu = (line: string): string => {
-  const { stringToBeReplaced, replacerString } = equRegex.exec(line).groups;
-  return `\t${stringToBeReplaced} EQU ${replacerString}`;
+export const prettifyPseudoInstruction = (line: string): string => {
+  const { name, op, opnd } = pseudoInstructionRegex.exec(line).groups;
+  return `\t${name ? `${name} ` : ''}${op.toUpperCase()}${opnd ? ` ${opnd}` : ''}`;
 };
 
 const prettifyMacro = (line: string): string => {
@@ -68,11 +68,9 @@ const prettify = (code: string): string => code.split('\n')
       prettyLine.push(prettifyLabel(line));
     }
 
-    if (equRegex.test(line)) {
-      prettyLine.push(prettifyEqu(line));
-    }
-
-    if (instructionRegex.test(line)) {
+    if (pseudoInstructionRegex.test(line)) {
+      prettyLine.push(prettifyPseudoInstruction(line));
+    } else if (instructionRegex.test(line)) {
       prettyLine.push(prettifyInstruction(line));
     }
 

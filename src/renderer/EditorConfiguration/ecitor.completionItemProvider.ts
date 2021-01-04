@@ -23,6 +23,13 @@ const generateDocumentationForInstruction = (instruction: IInstruction): string 
   return documentation.join('\n');
 };
 
+const createPseudoInstructionSuggestions = (range: IRange):Array<CompletionItem> => keywords.pseudoInstructionKeywords.map(pseudoInstruction => ({
+  range: range,
+  label: pseudoInstruction,
+  insertText: pseudoInstruction,
+  kind: monaco.languages.CompletionItemKind.Keyword
+}));
+
 const createMnemonicSuggestions = (range: IRange):Array<CompletionItem> => uniqueInstructionsByMnemonics.map(instruction => ({
   range: range,
   label: instruction.mnemonic,
@@ -55,7 +62,7 @@ export const completionItemProvider: CompletionItemProvider = {
       endColumn: word.endColumn
     };
     return ({
-      suggestions: [...createMnemonicSuggestions(range), ...createExpressionSuggestions(range), ...createDeclarationSuggestions(range)]
+      suggestions: [...createMnemonicSuggestions(range), ...createExpressionSuggestions(range), ...createDeclarationSuggestions(range), ...createPseudoInstructionSuggestions(range)]
     });
   }
 };

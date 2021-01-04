@@ -1,14 +1,16 @@
 import { findInstructionSize } from '@utils/Utils';
-import { labelRegex, instructionRegex, declarationRegex, beginMacroRegex, endMacroRegex, commentRegex, variableRegex, hexNumberRegex, binNumberRegex, decNumberRegex, octNumberRegex, equRegex, literalRegex } from '@utils/Regex';
+import { labelRegex, instructionRegex, declarationRegex, beginMacroRegex, endMacroRegex, commentRegex, variableRegex, hexNumberRegex, binNumberRegex, decNumberRegex, octNumberRegex, literalRegex, pseudoInstructionRegex } from '@utils/Regex';
 import Instruction from './Types/Instruction';
 import Declaration from './Types/Declaration';
 import { all, create } from 'mathjs';
 import { PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
+import PseudoInstruction from './Types/PseudoInstruction';
 
 const strictHexRegex = new RegExp(`^${hexNumberRegex.source}$`, 'i');
 const strictBinRegex = new RegExp(`^${binNumberRegex.source}$`, 'i');
 const strictDecRegex = new RegExp(`^${decNumberRegex.source}$`, 'i');
 const strictOctRegex = new RegExp(`^${octNumberRegex.source}$`, 'i');
+const DOLLAR_OPERATOR = /\B\$\B/ig;
 
 export class Macro {
   public readonly name: string;
@@ -26,11 +28,11 @@ export class Macro {
 
 export class Label implements PrettyPrintable {
   public readonly name: string;
-  public readonly value: number;
+  public readonly address: number;
 
   public constructor(name: string, value = 0) {
     this.name = name;
-    this.value = value;
+    this.address = value;
   }
 
   public prettyPrint(): string {
@@ -38,10 +40,13 @@ export class Label implements PrettyPrintable {
   }
 }
 
+export type LineContentType = Instruction | Declaration | PseudoInstruction;
+interface LineWithAddress { content: LineWithBreakpoint; address: number }
+
 export interface ParsedLine {
   lineNumber: number;
   label?: Label;
-  content: Instruction | Declaration;
+  content: LineContentType;
 }
 
 export interface LineWithBreakpoint {
@@ -52,69 +57,76 @@ export interface LineWithBreakpoint {
 export default class Parser {
   public parse(text: string, breakpoints: Array<number>): Array<ParsedLine> {
     const splittedText = text.split('\n');
-    const linesWithBreakpoints = this.applyBreakpointsToLines(splittedText, breakpoints);
-    const linesWithoutComments = linesWithBreakpoints.map(line => this.removeComment(line));
-    const trimmedLines = linesWithoutComments.filter(line => line.content.trim() !== '');
-    const linesWithoutEqu = Parser.replaceEqu(trimmedLines);
+    const linesWithoutComments = splittedText.map(line => line.replace(commentRegex, ''));
+    const trimmedLines = linesWithoutComments.map(line => line.trim());
+    const linesWithBreakpoints = this.applyBreakpointsToLines(trimmedLines, breakpoints);
+    const nonEmptyLines = linesWithBreakpoints.filter(line => line.content);
+    const linesWithoutEqu = Parser.replaceDirectives(nonEmptyLines);
     const linesWithoutMacros = this.removeMacros(linesWithoutEqu);
+    const linesWithAddresses = this.assignAddressesToLines(linesWithoutMacros);
 
-    const labels = Parser.getLabels(linesWithoutMacros.map(line => line.content));
-    let address = 0;
-    return linesWithoutMacros.map((line, i) => {
-      let label: Label, content: Declaration | Instruction;
+    const labels = this.getLabels(linesWithAddresses);
 
-      if (labelRegex.exec(line.content)) {
-        label = labels.find(_label => _label.name === labelRegex.exec(line.content).groups.label);
+    return linesWithAddresses.map((line, i) => {
+      let label: Label, content: LineContentType;
+      const lineContent = line.content.content;
+      const address = line.address;
+
+      if (labelRegex.test(lineContent)) {
+        label = labels.find(_label => _label.name === labelRegex.exec(lineContent).groups.label);
       }
 
-      if (instructionRegex.exec(line.content)) {
-        content = new Instruction(line.content, address, line.breakpoint, labels);
-        address += findInstructionSize(content.mnemonic);
-      }
-
-      if (declarationRegex.exec(line.content)) {
-        content = new Declaration(line.content, labels);
-        address += content.list.length;
+      if (pseudoInstructionRegex.test(lineContent)) {
+        content = new PseudoInstruction(lineContent, address);
+      } else if (instructionRegex.test(lineContent)) {
+        content = new Instruction(lineContent, address, line.content.breakpoint, labels);
+      } else if (declarationRegex.test(lineContent)) {
+        content = new Declaration(lineContent, labels, address);
       }
       return { lineNumber: i, label: label, content: content };
     }).filter(parsedLine => parsedLine.content || parsedLine.label);
   }
 
-  public static replaceEqu(lines: Array<LineWithBreakpoint>, removeEquLines = true): Array<LineWithBreakpoint> {
+  public static replaceDirectives(lines: Array<LineWithBreakpoint>, removeEquLines = true): Array<LineWithBreakpoint> {
     interface EqData {replacerString: string, stringToBeReplaced: string, replacerRegex: RegExp}
     const currentReplacers: Array<EqData> = [];
     const spliceIndeces: Array<number> = [];
-    const replacedLine = lines.map((line, i) => {
-      if (equRegex.test(line.content)) {
-        const { stringToBeReplaced, replacerString } = equRegex.exec(line.content).groups;
-        const replacerRegex = new RegExp(`(?<toReplace>\\b${stringToBeReplaced}\\b)(?=(?:(?:[^']*'){2})*[^']*$)(?!\\s*equ)`);
-        if (currentReplacers.find(replacer => replacer.stringToBeReplaced === stringToBeReplaced)) {
-          const index = currentReplacers.findIndex(replacer => replacer.stringToBeReplaced === stringToBeReplaced);
-          currentReplacers[index] = { replacerString: replacerString, stringToBeReplaced: stringToBeReplaced, replacerRegex: replacerRegex };
+    const replacedLines = lines.map((line, i) => {
+      if (pseudoInstructionRegex.test(line.content)) {
+        let pseudoInstruction;
+        try {
+          pseudoInstruction = new PseudoInstruction(line.content);
+        } catch (error) {
           spliceIndeces.push(i);
-        } else {
-          currentReplacers.push({ replacerString: replacerString, stringToBeReplaced: stringToBeReplaced, replacerRegex: replacerRegex });
+          return line;
+        }
+        if (['EQU', 'SET'].includes(pseudoInstruction.op)) {
+          const { name: stringToBeReplaced, opnd: replacerString } = pseudoInstructionRegex.exec(line.content).groups;
+          const replacerRegex = new RegExp(`(?<toReplace>\\b${stringToBeReplaced}\\b)(?=(?:(?:[^']*'){2})*[^']*$)`);
+          if (pseudoInstruction.op === 'SET' && currentReplacers.find(replacer => replacer.stringToBeReplaced === stringToBeReplaced)) {
+            const index = currentReplacers.findIndex(replacer => replacer.stringToBeReplaced === stringToBeReplaced);
+            currentReplacers[index] = { replacerString: replacerString, stringToBeReplaced: stringToBeReplaced, replacerRegex: replacerRegex };
+          } else {
+            currentReplacers.push({ replacerString: replacerString, stringToBeReplaced: stringToBeReplaced, replacerRegex: replacerRegex });
+          }
           spliceIndeces.push(i);
         }
       }
       for (const replacer of currentReplacers) {
         if (replacer.replacerRegex.test(line.content)) {
+          const toReplace = new RegExp(`(\\b${replacer.stringToBeReplaced}\\b)(?=(?:(?:[^']*'){2})*[^']*$)`, 'g');
           // eslint-disable-next-line
-          line.content = (line.content as any).replaceAll(replacer.stringToBeReplaced, replacer.replacerString) as string;
+          line.content = (line.content as any).replaceAll(toReplace, replacer.replacerString) as string;
         }
       }
       return line;
     });
     if (removeEquLines) {
       spliceIndeces.reverse().forEach(index => {
-        replacedLine.splice(index, 1);
+        replacedLines.splice(index, 1);
       });
     }
-    return replacedLine;
-  }
-
-  private removeComment(line: LineWithBreakpoint): LineWithBreakpoint {
-    return { content: line.content.replace(commentRegex, ''), breakpoint: line.breakpoint };
+    return replacedLines;
   }
 
   private removeMacros(lines: Array<LineWithBreakpoint>): Array<LineWithBreakpoint> {
@@ -136,12 +148,9 @@ export default class Parser {
       return lines;
     }
 
-    macros
-      .map(macro => macro.removeIndexes)
-      .reverse()
-      .forEach(indexPair => {
-        lines.splice(indexPair.beginning, indexPair.length);
-      });
+    macros.map(macro => macro.removeIndexes).reverse().forEach(indexPair => {
+      lines.splice(indexPair.beginning, indexPair.length);
+    });
     const macroRegex = new RegExp(`^\\s*(?<name>${macros.map(macro => macro.name).join('|')})\\s+(?<args>(\\w)+(\\s*,\\s*\\w+)*)`);
 
     return lines
@@ -161,21 +170,38 @@ export default class Parser {
       .flat();
   }
 
-  public static getLabels(lines: Array<string>): Array<Label> {
-    let labelOffset = 0;
+  public static replaceDollar(line: string, address: number): string {
+    // eslint-disable-next-line
+    return (line as any).replaceAll(DOLLAR_OPERATOR, address);
+  }
+
+  private assignAddressesToLines(lines: Array<LineWithBreakpoint>): Array<LineWithAddress> {
+    let address = 0;
+    return lines.map(line => {
+      const content = line.content;
+      const lineWithAddress: LineWithAddress = { content: line, address: address };
+      if (pseudoInstructionRegex.test(content)) {
+        const pseudoInstruction = new PseudoInstruction(content, address);
+        if (pseudoInstruction.op === 'ORG') {
+          address = Number(pseudoInstruction.opnd);
+        }
+      } else if (instructionRegex.test(content)) {
+        address += findInstructionSize(instructionRegex.exec(content).groups.mnemonic);
+      } else if (declarationRegex.test(content)) {
+        address += new Declaration(content).list.length;
+      }
+      return lineWithAddress;
+    });
+  }
+
+  private getLabels(lines: Array<LineWithAddress>): Array<Label> {
     return lines
       .map(line => {
-        let label = null;
-        if (labelRegex.exec(line)) {
-          label = new Label(labelRegex.exec(line).groups.label, labelOffset);
+        const lineContent = line.content.content;
+        if (labelRegex.test(lineContent)) {
+          return new Label(labelRegex.exec(lineContent).groups.label, line.address);
         }
-        if (instructionRegex.exec(line)) {
-          labelOffset += findInstructionSize(instructionRegex.exec(line).groups.mnemonic);
-        }
-        if (declarationRegex.exec(line)) {
-          labelOffset += new Declaration(line).list.length;
-        }
-        return label;
+        return null;
       }).filter(n => n);
   }
 
@@ -210,8 +236,8 @@ export const parseExpression = (expression: string): number => {
     .replace(/MOD/gi, '%')
     .replace(/NOT/gi, '~')
     .replace(/AND/gi, '&')
-    .replace(/OR/gi, '|')
     .replace(/XOR/gi, '^|')
+    .replace(/OR/gi, '|')
     .replace(/SHR/gi, '>>')
     .replace(/SHL/gi, '<<')
     .toLowerCase()

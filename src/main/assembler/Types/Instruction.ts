@@ -1,6 +1,6 @@
 import { prettifyInstruction, PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
 import { commaSeparatorRegex, expressionRegex, instructionRegex, literalRegex, strictNumber, registerOrMemoryRegex } from '@utils/Regex';
-import { Label, parseExpression, parseToInt } from '../Parser';
+import Parser, { Label, parseExpression, parseToInt } from '../Parser';
 
 export class Operand {
   public readonly value: string;
@@ -38,22 +38,21 @@ export default class Instruction implements PrettyPrintable {
   }
 
   private parseOperands(operands: string, labels: Array<Label>): Array<Operand> {
-    return this.splitAndTrimOperands(operands).map(operand => {
+    return this.splitAndTrimOperands(Parser.replaceDollar(operands, this.address)).map(operand => {
       const potentialLabel = labels.find(label => label.name === operand);
       if (strictNumber.exec(operand)) {
         return new Operand(operand, parseToInt(operand));
       } else if (STRICT_LITERAL.exec(operand)) {
         return new Operand(operand, parseInt(String(operand.charCodeAt(1)), 10));
       } else if (potentialLabel) {
-        return new Operand(operand, potentialLabel.value);
+        return new Operand(operand, potentialLabel.address);
       } else if (STRICT_REGISTER.exec(operand)) {
         return new Operand(operand);
       } else if (STRICT_EXPRESSION.exec(operand)) {
-        const intValue = parseExpression(operand);
-        if (isNaN(intValue)) {
-          return new Operand(operand);
+        const result = parseExpression(operand);
+        if (!isNaN(result)) {
+          return new Operand(operand, result);
         }
-        return new Operand(operand, intValue);
       }
       return new Operand(operand);
     });

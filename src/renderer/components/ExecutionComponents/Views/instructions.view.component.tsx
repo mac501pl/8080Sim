@@ -1,8 +1,8 @@
 import * as React from 'react';
 import { ListGroup, ListGroupItem } from 'react-bootstrap';
 import Instruction from '@/main/assembler/Types/Instruction';
-import Declaration from '@/main/assembler/Types/Declaration';
 import { LinesWithOpcodes } from '@/main/assembler/assemble';
+import { PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
 
 interface InstructionViewProps {
   instructions: Array<LinesWithOpcodes>;
@@ -26,11 +26,9 @@ export default class InstructionsView extends React.PureComponent<InstructionVie
       const { line: { content, label } } = entry;
       if (content instanceof Instruction) {
         return true;
-      } else if (content instanceof Declaration) {
-        return false;
       }
-      if (label) {
-        return !(arr[index + 1]?.line.content instanceof Declaration || !arr[index + 1]);
+      if (label && !content) {
+        return arr[index + 1]?.line.content instanceof Instruction;
       }
       return false;
     });
@@ -62,7 +60,7 @@ export default class InstructionsView extends React.PureComponent<InstructionVie
           >
             <div className="d-flex justify-content-between align-items-center">
               {(entry.line.content as Instruction).breakpoint && this.props.debug && <div className="breakpoint"/>}
-              <div className="pl-3">{entry.line.content.prettyPrint()}</div>
+              <div className="pl-3">{(entry.line.content as PrettyPrintable).prettyPrint()}</div>
             </div>
             <div className="float-right text-muted">{`; ${entry.bytes.map(byte => byte.toHex()).join(' ')}`}</div>
           </ListGroupItem>)]

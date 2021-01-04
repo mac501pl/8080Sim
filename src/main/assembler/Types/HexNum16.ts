@@ -2,6 +2,9 @@ export default class HexNum16 {
   private _intValue: number;
 
   public constructor(value?: number) {
+    if (value > 0xffff) {
+      throw new Error('Value should not be greater than 0xffff');
+    }
     this._intValue = value ? value & 0xffff : 0;
   }
 
