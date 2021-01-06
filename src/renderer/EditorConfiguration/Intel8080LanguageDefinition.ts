@@ -6,7 +6,6 @@ export interface MonarchLanguageConfiguration extends monaco.languages.IMonarchL
   mnemonics: Array<string>;
   declarationKeywords: Array<string>;
   registerKeywords: Array<string>;
-  macroKeywords: Array<string>;
   expressionKeywords: Array<string>;
 }
 
@@ -17,7 +16,6 @@ export const languageDefinition = {
   pseudoInstructions: keywords.pseudoInstructionKeywords,
   declarationKeywords: keywords.declarationKeywords,
   registerKeywords: keywords.registerKeywords,
-  macroKeywords: keywords.macroKeywords,
   expressionKeywords: keywords.expressionKeywords,
   tokenizer: {
     root: [
@@ -32,7 +30,6 @@ export const languageDefinition = {
             '@pseudoInstructions': 'mnemonic',
             '@declarationKeywords': 'declaration',
             '@registerKeywords': 'register',
-            '@macroKeywords': 'macro',
             '@expressionKeywords': 'expression'
           }
         }

@@ -21,7 +21,6 @@ const theme = {
     { token: 'comment ', foreground: green, fontStyle: 'italic' },
     { token: 'label', foreground: purple },
     { token: 'quotes', foreground: lightGreen },
-    { token: 'macro', foreground: yellow },
     { token: 'expression', foreground: red }
   ],
   colors: {

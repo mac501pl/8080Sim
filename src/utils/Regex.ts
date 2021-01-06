@@ -9,8 +9,6 @@ export const variableRegex = /%(?<number>\d+)/i;
 export const textRegex = /^'[^\n']*'$/i;
 export const registerOrMemoryRegex = /\b[ABCDEHLM]\b/i;
 
-export const beginMacroRegex = /%macro\s+(?<name>\w+)\s+(?<paramsNumber>\w+)/i;
-export const endMacroRegex = /%endmacro/i;
 export const labelRegex = /^\s*((?<label>[\w]+):)/i;
 export const number = [hexNumberRegex, binNumberRegex, octNumberRegex, decNumberRegex].map(regex => `(\\b${regex.source}\\b)`).join('|');
 export const strictNumber = new RegExp([hexNumberRegex, binNumberRegex, octNumberRegex, decNumberRegex].map(regex => `(^${regex.source}$)`).join('|'));
@@ -21,6 +19,6 @@ export const instructionRegex = /^(\s*\w*\s*:)?\s*(?<mnemonic>\b[A-Z]+\b(?<!\bD[
 export const declarationRegex = /^(\s*\w*\s*:)?\s*(?<type>\bD[BWS]\b)\s+(?<arg>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\s*(.*))?$/im;
 export const commaSeparatorRegex = /,(?=(?:(?:[^']*'){2})*[^']*$)/;
 
-export const pseudoInstructionRegex = /^\s*(((?<name>\w+):?)\s+)?(?<op>ORG|EQU|SET|END|IF|ENDIF|MACRO|ENDM)\s+(?<opnd>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\s*(.*))?$/im;
+export const pseudoInstructionRegex = /^\s*(((?<name>\w+):?)\s+)?(?<op>MACRO|ENDM|ORG|EQU|SET|END|IF|ENDIF)\s*(?<opnd>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\s*(.*))?$/im;
 // todo all comments are stripped so why worry about them
 // todo simplify regtexes, sometimes they are onky used once, could make them strict in the fist place ex: rgisterOeMemoryRegex

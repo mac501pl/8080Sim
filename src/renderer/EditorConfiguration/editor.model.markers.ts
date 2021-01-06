@@ -1,9 +1,9 @@
-import Parser, { Label, LineContentType, ParsedLine } from '@/main/assembler/Parser';
+import Parser, { Label, LineContentType, ParsedLine, parseToInt } from '@/main/assembler/Parser';
 import Declaration from '@/main/assembler/Types/Declaration';
 import Instruction from '@/main/assembler/Types/Instruction';
 import PseudoInstruction from '@/main/assembler/Types/PseudoInstruction';
 import instructionList, { IInstruction } from '@/main/instruction_list';
-import { beginMacroRegex, declarationRegex, endMacroRegex, instructionRegex, labelRegex, pseudoInstructionRegex, variableRegex } from '@/utils/Regex';
+import { declarationRegex, instructionRegex, labelRegex, pseudoInstructionRegex, variableRegex } from '@/utils/Regex';
 import { isNumber } from '@/utils/Utils';
 import { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
@@ -62,9 +62,9 @@ const parseForSyntaxCheck = (text: string): Array<LineParsedForCheck> => {
         content = new Declaration(line, labels);
       }
 
-      if (beginMacroRegex.exec(line)) {
-        const { name, paramsNumber } = beginMacroRegex.exec(line).groups;
-        macro = { name: name, numberOfParams: Number(paramsNumber) };
+      if (pseudoInstructionRegex.test(line) && pseudoInstructionRegex.exec(line).groups.op === 'MACRO') {
+        const { name, opnd } = pseudoInstructionRegex.exec(line).groups;
+        macro = { name: name, numberOfParams: parseToInt(opnd) };
       }
     } catch (e) {
       throw new ParseError(i, (e as Error).message);
@@ -120,7 +120,7 @@ const noMacroRedefinition = (parsedText: Array<LineParsedForCheck>): Array<I8080
   const markerData: Array<I8080MarkerData> = [];
   for (const line of linesWithMacros) {
     if (macros.includes(line.macro.name)) {
-      const match = beginMacroRegex.exec(line.rawLine);
+      const match = pseudoInstructionRegex.exec(line.rawLine);
       const alreadyDeclaredMacroLineNumber = linesWithMacros.find(_line => _line.macro.name === line.macro.name).lineNumber + 1;
       const [startColumn, endColumn] = getColumnIndeces(match.groups.name, line.rawLine);
       markerData.push({
@@ -206,17 +206,17 @@ const noClosedMacro = (parsedText: Array<LineParsedForCheck>): Array<I8080Marker
   const linesWithMacros = parsedText.filter(line => line.macro);
   const markerData: Array<I8080MarkerData> = [];
   linesWithMacros.forEach(lineWithMacro => {
-    const nextMacro = parsedText.slice(lineWithMacro.lineNumber + 1).find(line => beginMacroRegex.exec(line.rawLine));
+    const nextMacro = parsedText.slice(lineWithMacro.lineNumber + 1).find(line => pseudoInstructionRegex.test(line.rawLine) && pseudoInstructionRegex.exec(line.rawLine).groups.op === 'MACRO');
     const subMacroArray = nextMacro === undefined ? parsedText.slice(lineWithMacro.lineNumber) : parsedText.slice(lineWithMacro.lineNumber, nextMacro.lineNumber);
-    const isClosed = subMacroArray.find(line => endMacroRegex.exec(line.rawLine)) !== undefined;
+    const isClosed = subMacroArray.find(line => pseudoInstructionRegex.test(line.rawLine) && pseudoInstructionRegex.exec(line.rawLine).groups.op === 'ENDM') !== undefined;
     if (!isClosed) {
-      const match = beginMacroRegex.exec(lineWithMacro.rawLine);
+      const match = pseudoInstructionRegex.exec(lineWithMacro.rawLine);
       const [startColumn, endColumn] = getColumnIndeces(match.groups.name, lineWithMacro.rawLine);
       markerData.push({
         lineNumber: lineWithMacro.lineNumber,
         startColumn: startColumn,
         endColumn: endColumn,
-        message: 'This macro is unclosed. Close it with \'%endmacro\' keyword'
+        message: 'This macro is unclosed. Close it with \'ENDM\' keyword'
       });
     }
   });
@@ -310,7 +310,7 @@ const noInvalidMacroNames = (parsedText: Array<LineParsedForCheck>): Array<I8080
   const markerData: Array<I8080MarkerData> = [];
   for (const lineWithMacro of linesWithMacros) {
     if (mnemonics.includes(lineWithMacro.macro.name.toUpperCase())) {
-      const match = beginMacroRegex.exec(lineWithMacro.rawLine);
+      const match = pseudoInstructionRegex.exec(lineWithMacro.rawLine);
       const [startColumn, endColumn] = getColumnIndeces(match.groups.name, lineWithMacro.rawLine);
       markerData.push({
         lineNumber: lineWithMacro.lineNumber,

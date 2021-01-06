@@ -1,5 +1,5 @@
 import { findInstructionSize } from '@utils/Utils';
-import { labelRegex, instructionRegex, declarationRegex, beginMacroRegex, endMacroRegex, commentRegex, variableRegex, hexNumberRegex, binNumberRegex, decNumberRegex, octNumberRegex, literalRegex, pseudoInstructionRegex } from '@utils/Regex';
+import { labelRegex, instructionRegex, declarationRegex, commentRegex, variableRegex, hexNumberRegex, binNumberRegex, decNumberRegex, octNumberRegex, literalRegex, pseudoInstructionRegex } from '@utils/Regex';
 import Instruction from './Types/Instruction';
 import Declaration from './Types/Declaration';
 import { all, create } from 'mathjs';
@@ -133,12 +133,12 @@ export default class Parser {
     const macros: Array<Macro> = lines
       .map((line, i) => {
         const { content } = line;
-        if (beginMacroRegex.exec(content)) {
-          const { name, paramsNumber } = beginMacroRegex.exec(content).groups;
-          const macroLength = lines.slice(i).findIndex(str => endMacroRegex.exec(str.content));
+        if (pseudoInstructionRegex.test(content) && pseudoInstructionRegex.exec(content).groups.op === 'MACRO') {
+          const { name, opnd } = pseudoInstructionRegex.exec(content).groups;
+          const macroLength = lines.slice(i).findIndex(str => pseudoInstructionRegex.test(str.content) && pseudoInstructionRegex.exec(str.content).groups.op === 'ENDM');
           const removeIndexes = { beginning: i, length: macroLength + 1 };
           const macroLines = lines.slice(i + 1, i + macroLength);
-          return new Macro(name, parseInt(paramsNumber, 10), macroLines, removeIndexes);
+          return new Macro(name, parseInt(opnd, 10), macroLines, removeIndexes);
         }
         return null;
       })
@@ -211,13 +211,13 @@ export default class Parser {
 }
 
 export const parseToInt = (numberToParse: string): number => {
-  if (strictHexRegex.exec(numberToParse)) {
+  if (strictHexRegex.test(numberToParse)) {
     return parseInt(numberToParse.replace(/H/i, ''), 16);
-  } else if (strictDecRegex.exec(numberToParse)) {
+  } else if (strictDecRegex.test(numberToParse)) {
     return parseInt(numberToParse, 10);
-  } else if (strictBinRegex.exec(numberToParse)) {
+  } else if (strictBinRegex.test(numberToParse)) {
     return parseInt(numberToParse.replace(/B/i, ''), 2);
-  } else if (strictOctRegex.exec(numberToParse)) {
+  } else if (strictOctRegex.test(numberToParse)) {
     return parseInt(numberToParse.replace(/O/ig, ''), 8);
   }
   throw new Error(`Cannot parse to int: ${numberToParse}`);
@@ -243,3 +243,5 @@ export const parseExpression = (expression: string): number => {
     .toLowerCase()
   ));
 };
+
+// TODO tokenizacja wszystkiego najpierw a dopiero potem modyfikacje na tekscie. w taki sposob bedzie mozna uzyc parsera z tej klasy w model markerze. bedzie tez o wiele wygodniejsze uzywanie makr

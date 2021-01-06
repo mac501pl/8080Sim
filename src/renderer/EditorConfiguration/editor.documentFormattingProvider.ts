@@ -1,4 +1,4 @@
-import { instructionRegex, declarationRegex, beginMacroRegex, endMacroRegex, labelRegex, commentRegex, commaSeparatorRegex, pseudoInstructionRegex } from '@utils/Regex';
+import { instructionRegex, declarationRegex, labelRegex, commentRegex, commaSeparatorRegex, pseudoInstructionRegex } from '@utils/Regex';
 import instructionList from '@main/instruction_list';
 
 const validMnemonics = instructionList.map(instruction => instruction.mnemonic.toLowerCase());
@@ -47,13 +47,6 @@ export const prettifyPseudoInstruction = (line: string): string => {
   return `\t${name ? `${name} ` : ''}${op.toUpperCase()}${opnd ? ` ${opnd}` : ''}`;
 };
 
-const prettifyMacro = (line: string): string => {
-  const { name, paramsNumber } = beginMacroRegex.exec(line).groups;
-  return `%macro ${name.trim()} ${paramsNumber.trim()}`;
-};
-
-const prettifyEndmacro = (): string => '%endmacro';
-
 const prettifyComment = (line: string): string => {
   const { comment } = commentRegex.exec(line).groups;
   return ` ; ${comment}`;
@@ -61,7 +54,6 @@ const prettifyComment = (line: string): string => {
 
 const prettify = (code: string): string => code.split('\n')
   .map(line => line.trim())
-  .filter(line => line)
   .map(line => {
     const prettyLine: Array<string> = [];
     if (labelRegex.test(line)) {
@@ -78,21 +70,12 @@ const prettify = (code: string): string => code.split('\n')
       prettyLine.push(prettifyDeclaration(line));
     }
 
-    if (beginMacroRegex.test(line)) {
-      prettyLine.push(prettifyMacro(line));
-    }
-
-    if (endMacroRegex.test(line)) {
-      prettyLine.push(prettifyEndmacro());
-    }
-
     if (commentRegex.test(line)) {
       prettyLine.push(prettifyComment(line));
     }
 
     return prettyLine.join('');
   })
-  .join('\n')
-  .replace(/^\s*[\r\n]/gm, '');
+  .join('\n');
 
 export default prettify;
