@@ -1,10 +1,10 @@
-import Parser, { Label, LineContentType, ParsedLine, parseToInt } from '@/main/assembler/Parser';
+import Parser, { Label, LineContentType, ParsedLine } from '@/main/assembler/Parser';
 import Declaration from '@/main/assembler/Types/Declaration';
 import Instruction from '@/main/assembler/Types/Instruction';
 import PseudoInstruction from '@/main/assembler/Types/PseudoInstruction';
 import instructionList, { IInstruction } from '@/main/instruction_list';
-import { declarationRegex, instructionRegex, labelRegex, pseudoInstructionRegex, variableRegex } from '@/utils/Regex';
-import { isNumber } from '@/utils/Utils';
+import { declarationRegex, instructionRegex, labelRegex, pseudoInstructionRegex } from '@/utils/Regex';
+import { isNumber, intersects } from '@/utils/Utils';
 import { editor } from 'monaco-editor';
 import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { CustomError } from 'ts-custom-error';
@@ -18,7 +18,7 @@ class ParseError extends CustomError {
   }
 }
 
-interface LightMacro {name: string; numberOfParams: number}
+interface LightMacro {name: string; opnd: Array<string>}
 
 interface LineParsedForCheck extends ParsedLine {
   macro?: LightMacro;
@@ -62,9 +62,8 @@ const parseForSyntaxCheck = (text: string): Array<LineParsedForCheck> => {
         content = new Declaration(line, labels);
       }
 
-      if (pseudoInstructionRegex.test(line) && pseudoInstructionRegex.exec(line).groups.op === 'MACRO') {
-        const { name, opnd } = pseudoInstructionRegex.exec(line).groups;
-        macro = { name: name, numberOfParams: parseToInt(opnd) };
+      if (content instanceof PseudoInstruction && content.op === 'MACRO') {
+        macro = { name: content.name, opnd: content.opnd as Array<string> };
       }
     } catch (e) {
       throw new ParseError(i, (e as Error).message);
@@ -165,7 +164,7 @@ const noMacroOperandsNumberMismatch = (parsedText: Array<LineParsedForCheck>): A
   const markerData: Array<I8080MarkerData> = [];
   for (const line of linesWithMacros) {
     const instructionFromLine = line.content as Instruction;
-    const expectedOperandsNumber = macros.find(macro => macro.name === instructionFromLine.mnemonic).numberOfParams;
+    const expectedOperandsNumber = macros.find(macro => macro.name === instructionFromLine.mnemonic).opnd.length;
     const actualOperandsLength = instructionFromLine.operands.length;
     if (expectedOperandsNumber !== actualOperandsLength) {
       const match = instructionRegex.exec(line.rawLine);
@@ -206,9 +205,9 @@ const noClosedMacro = (parsedText: Array<LineParsedForCheck>): Array<I8080Marker
   const linesWithMacros = parsedText.filter(line => line.macro);
   const markerData: Array<I8080MarkerData> = [];
   linesWithMacros.forEach(lineWithMacro => {
-    const nextMacro = parsedText.slice(lineWithMacro.lineNumber + 1).find(line => pseudoInstructionRegex.test(line.rawLine) && pseudoInstructionRegex.exec(line.rawLine).groups.op === 'MACRO');
+    const nextMacro = linesWithMacros.filter(line => line.lineNumber > lineWithMacro.lineNumber)[0];
     const subMacroArray = nextMacro === undefined ? parsedText.slice(lineWithMacro.lineNumber) : parsedText.slice(lineWithMacro.lineNumber, nextMacro.lineNumber);
-    const isClosed = subMacroArray.find(line => pseudoInstructionRegex.test(line.rawLine) && pseudoInstructionRegex.exec(line.rawLine).groups.op === 'ENDM') !== undefined;
+    const isClosed = subMacroArray.find(line => line.content instanceof PseudoInstruction && line.content.op === 'ENDM') !== undefined;
     if (!isClosed) {
       const match = pseudoInstructionRegex.exec(lineWithMacro.rawLine);
       const [startColumn, endColumn] = getColumnIndeces(match.groups.name, lineWithMacro.rawLine);
@@ -225,9 +224,8 @@ const noClosedMacro = (parsedText: Array<LineParsedForCheck>): Array<I8080Marker
 
 const noOperandTypemismatch = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
   const findExpectedOperandLength = (mnemonic: string): number => instructionList.find(instruction => instruction.mnemonic === mnemonic.toUpperCase()).operands.length;
-  const intersects = (arr1: Array<string>, arr2: Array<string>): boolean => arr1.some(element => arr2.includes(element));
-  const macros = parsedText.filter(line => line.macro).map(line => line.macro.name);
-  const linesWithInstructions = parsedText.filter(line => line.content instanceof Instruction).filter(line => !macros.includes((line.content as Instruction).mnemonic));
+  const macros = parsedText.filter(line => line.macro);
+  const linesWithInstructions = parsedText.filter(line => line.content instanceof Instruction).filter(line => !macros.map(_line => _line.macro.name).includes((line.content as Instruction).mnemonic));
   const markerData: Array<I8080MarkerData> = [];
   for (const line of linesWithInstructions) {
     const match = instructionRegex.exec(line.rawLine);
@@ -236,6 +234,7 @@ const noOperandTypemismatch = (parsedText: Array<LineParsedForCheck>): Array<I80
     const instructions: Array<IInstruction> = instructionList.filter(instruction => instruction.mnemonic === instructionFromLine.mnemonic.toUpperCase());
     const instructionsOperands = instructions.map(instruction => instruction.operands);
     const operandsLength = findExpectedOperandLength(instructionFromLine.mnemonic);
+    const macroOperands = macros.filter(macro => macro.lineNumber < line.lineNumber).reverse()[0].macro.opnd;
 
     const operandsByIndex: Array<Array<string>> = [];
     for (let i = 0; i < operandsLength; i++) {
@@ -267,7 +266,7 @@ const noOperandTypemismatch = (parsedText: Array<LineParsedForCheck>): Array<I80
             message: `Operand at position ${i + 1} has a value greater than 0xFFFF which is not accepted here`
           });
         }
-      } else if (!operands.includes(instructionFromLine.operands[i].value.toUpperCase()) && !variableRegex.exec(instructionFromLine.operands[i].value)) {
+      } else if (!operands.includes(instructionFromLine.operands[i].value.toUpperCase()) && !macroOperands.includes(instructionFromLine.operands[i].value)) {
         markerData.push({
           lineNumber: line.lineNumber,
           startColumn: startColumn,

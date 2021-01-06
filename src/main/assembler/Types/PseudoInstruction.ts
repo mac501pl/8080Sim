@@ -7,7 +7,7 @@ type AllowedOps = 'ORG' | 'EQU' | 'SET' | 'END' | 'IF' | 'ENDIF' | 'MACRO' | 'EN
 export default class PseudoInstruction implements PrettyPrintable {
   public readonly name?: string;
   public readonly op: AllowedOps;
-  public readonly opnd?: number | string;
+  public readonly opnd?: number | string | Array<string>;
   private readonly line: string;
 
   public constructor(line: string, address = 0) {
@@ -18,7 +18,7 @@ export default class PseudoInstruction implements PrettyPrintable {
     this.line = line;
   }
 
-  private parseOpnd(opnd: string, address: number): number | string {
+  private parseOpnd(opnd: string, address: number): number | string | Array<string> {
     switch (this.op) {
     case 'ORG': {
       const operand = Parser.replaceDollar(opnd, address);
@@ -29,8 +29,13 @@ export default class PseudoInstruction implements PrettyPrintable {
       }
       throw new Error(`Invalid argument type for pseudoinstruction ORG: ${opnd}`);
     }
-    case 'MACRO':
-      return parseToInt(opnd);
+    case 'MACRO': {
+      const operands = opnd.split(',').map(_opnd => _opnd.trim()).filter(_opnd => _opnd);
+      if (operands.some(_opnd => strictNumber.exec(_opnd))) {
+        throw new Error('You cannot use a number as a macro argument');
+      }
+      return operands;
+    }
     case 'EQU':
     case 'SET':
       if ((/\w+/).test(opnd)) {

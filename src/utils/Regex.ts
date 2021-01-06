@@ -5,13 +5,12 @@ export const decNumberRegex = /[0-9]+/gi;
 export const binNumberRegex = /[0-1]+B/gi;
 export const octNumberRegex = /[0-7]+O/gi;
 export const literalRegex = /'[^\n']'/gi;
-export const variableRegex = /%(?<number>\d+)/i;
 export const textRegex = /^'[^\n']*'$/i;
 export const registerOrMemoryRegex = /\b[ABCDEHLM]\b/i;
 
 export const labelRegex = /^\s*((?<label>[\w]+):)/i;
 export const number = [hexNumberRegex, binNumberRegex, octNumberRegex, decNumberRegex].map(regex => `(\\b${regex.source}\\b)`).join('|');
-export const strictNumber = new RegExp([hexNumberRegex, binNumberRegex, octNumberRegex, decNumberRegex].map(regex => `(^${regex.source}$)`).join('|'));
+export const strictNumber = new RegExp([hexNumberRegex, binNumberRegex, octNumberRegex, decNumberRegex].map(regex => `(^${regex.source}$)`).join('|'), 'i');
 
 export const expressionRegex = new RegExp(`^((((NOT|-)\\s*){0,2})(${number}|${literalRegex.source}))(\\s*(\\+|-|\\*|\\/|MOD|AND|OR|XOR|SHR|SHL)\\s*(((NOT|-)\\s*){0,2})(${number}|${literalRegex.source}))*`, 'i');
 

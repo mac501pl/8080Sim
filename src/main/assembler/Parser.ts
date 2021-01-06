@@ -1,5 +1,5 @@
 import { findInstructionSize } from '@utils/Utils';
-import { labelRegex, instructionRegex, declarationRegex, commentRegex, variableRegex, hexNumberRegex, binNumberRegex, decNumberRegex, octNumberRegex, literalRegex, pseudoInstructionRegex } from '@utils/Regex';
+import { labelRegex, instructionRegex, declarationRegex, commentRegex, hexNumberRegex, binNumberRegex, decNumberRegex, octNumberRegex, literalRegex, pseudoInstructionRegex } from '@utils/Regex';
 import Instruction from './Types/Instruction';
 import Declaration from './Types/Declaration';
 import { all, create } from 'mathjs';
@@ -14,13 +14,13 @@ const DOLLAR_OPERATOR = /\B\$\B/ig;
 
 export class Macro {
   public readonly name: string;
-  public readonly paramsNumber: number;
+  public readonly opnd: Array<string>;
   public readonly lines: Array<LineWithBreakpoint>;
   public readonly removeIndexes: { beginning: number; length: number };
 
-  public constructor(name: string, paramsNumber: number, lines: Array<LineWithBreakpoint>, removeIndexes: { beginning: number; length: number }) {
+  public constructor(name: string, opnd: Array<string>, lines: Array<LineWithBreakpoint>, removeIndexes: { beginning: number; length: number }) {
     this.name = name;
-    this.paramsNumber = paramsNumber;
+    this.opnd = opnd;
     this.lines = lines;
     this.removeIndexes = removeIndexes;
   }
@@ -133,12 +133,22 @@ export default class Parser {
     const macros: Array<Macro> = lines
       .map((line, i) => {
         const { content } = line;
-        if (pseudoInstructionRegex.test(content) && pseudoInstructionRegex.exec(content).groups.op === 'MACRO') {
-          const { name, opnd } = pseudoInstructionRegex.exec(content).groups;
-          const macroLength = lines.slice(i).findIndex(str => pseudoInstructionRegex.test(str.content) && pseudoInstructionRegex.exec(str.content).groups.op === 'ENDM');
-          const removeIndexes = { beginning: i, length: macroLength + 1 };
-          const macroLines = lines.slice(i + 1, i + macroLength);
-          return new Macro(name, parseInt(opnd, 10), macroLines, removeIndexes);
+        if (pseudoInstructionRegex.test(content)) {
+          const { op, name, opnd } = new PseudoInstruction(content);
+          if (op === 'MACRO') {
+            const macroLength = lines.slice(i).findIndex(str => {
+              if (pseudoInstructionRegex.test(str.content)) {
+                const { op: _op } = new PseudoInstruction(str.content);
+                if (_op === 'ENDM') {
+                  return true;
+                }
+              }
+              return false;
+            });
+            const removeIndexes = { beginning: i, length: macroLength + 1 };
+            const macroLines = lines.slice(i + 1, i + macroLength);
+            return new Macro(name, opnd as Array<string>, macroLines, removeIndexes);
+          }
         }
         return null;
       })
@@ -151,7 +161,7 @@ export default class Parser {
     macros.map(macro => macro.removeIndexes).reverse().forEach(indexPair => {
       lines.splice(indexPair.beginning, indexPair.length);
     });
-    const macroRegex = new RegExp(`^\\s*(?<name>${macros.map(macro => macro.name).join('|')})\\s+(?<args>(\\w)+(\\s*,\\s*\\w+)*)`);
+    const macroRegex = new RegExp(`^\\s*(?<name>${macros.map(macro => macro.name).join('|')})\\s*(?<args>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\\s*(.*))?$`);
 
     return lines
       .map(line => {
@@ -160,10 +170,17 @@ export default class Parser {
           const { name, args } = macroRegex.exec(content).groups;
           const macro = macros.find(_macro => _macro.name === name);
           const operands = args.split(',').map(arg => arg.trim());
-          return macro.lines.map(macroLine => ({
-            breakpoint: macroLine.breakpoint,
-            content: variableRegex.exec(macroLine.content) ? macroLine.content.replace(variableRegex, operands[Number(variableRegex.exec(macroLine.content).groups.number) - 1]) : macroLine.content
-          }));
+          return macro.lines.map(macroLine => {
+            let replacedContent = macroLine.content;
+            macro.opnd.forEach((operand, i) => {
+              // eslint-disable-next-line
+              replacedContent = (replacedContent as any).replaceAll(new RegExp(`\\b${operand}\\b`, 'g'), operands[i]);
+            });
+            return {
+              content: replacedContent,
+              breakpoint: macroLine.breakpoint
+            };
+          });
         }
         return line;
       })

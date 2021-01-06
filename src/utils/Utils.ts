@@ -22,3 +22,5 @@ export const findInstructionSize = (mnemonic: string): number => instructionList
 export const findInstructionSizeByOpcode = (opcode: HexNum): number => instructionList.find(instruction => instruction.opCode === opcode.intValue)?.size;
 
 export const uniqueByMnemonic = (arr: Array<IInstruction>): Array<IInstruction> => arr.filter((v, i, a) => a.findIndex(t => (t.mnemonic === v.mnemonic)) === i);
+
+export const intersects = (arr1: Array<string>, arr2: Array<string>): boolean => arr1.some(element => arr2.includes(element));
