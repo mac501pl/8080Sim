@@ -243,5 +243,3 @@ export const parseExpression = (expression: string): number => {
     .toLowerCase()
   ));
 };
-
-// TODO tokenizacja wszystkiego najpierw a dopiero potem modyfikacje na tekscie. w taki sposob bedzie mozna uzyc parsera z tej klasy w model markerze. bedzie tez o wiele wygodniejsze uzywanie makr
