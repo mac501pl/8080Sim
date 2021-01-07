@@ -234,7 +234,7 @@ const noOperandTypemismatch = (parsedText: Array<LineParsedForCheck>): Array<I80
     const instructions: Array<IInstruction> = instructionList.filter(instruction => instruction.mnemonic === instructionFromLine.mnemonic.toUpperCase());
     const instructionsOperands = instructions.map(instruction => instruction.operands);
     const operandsLength = findExpectedOperandLength(instructionFromLine.mnemonic);
-    const macroOperands = macros.filter(macro => macro.lineNumber < line.lineNumber).reverse()[0].macro.opnd;
+    const macroOperands = macros.length > 0 ? macros.filter(macro => macro.lineNumber < line.lineNumber).reverse()[0].macro.opnd : [];
 
     const operandsByIndex: Array<Array<string>> = [];
     for (let i = 0; i < operandsLength; i++) {
@@ -352,8 +352,10 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
       if (markerData.length > 0) {
         markerDataToShow.push(...markerData);
       }
-    // eslint-disable-next-line no-empty
-    } catch (e) {}
+    } catch (e) {
+    // eslint-disable-next-line no-console
+      console.error(e);
+    }
   }
   const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noUnclosedMacro, noMissingHlt, noInvalidMacroNames];
   for (const check of checks) {
@@ -362,8 +364,10 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
       if (markerData.length > 0) {
         markerDataToShow.push(...markerData);
       }
-    // eslint-disable-next-line no-empty
-    } catch (e) {}
+    } catch (e) {
+    // eslint-disable-next-line no-console
+      console.error(e);
+    }
   }
   return markerDataToShow.map(markerData => mapToMonacoMarkerData(markerData));
 };
