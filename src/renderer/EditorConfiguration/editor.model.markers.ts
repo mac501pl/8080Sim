@@ -201,7 +201,7 @@ const noMisusedEqu = (text: Array<string>): Array<I8080MarkerData> => {
   return markerData;
 };
 
-const noClosedMacro = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
+const noUnclosedMacro = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
   const linesWithMacros = parsedText.filter(line => line.macro);
   const markerData: Array<I8080MarkerData> = [];
   linesWithMacros.forEach(lineWithMacro => {
@@ -355,7 +355,7 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
     // eslint-disable-next-line no-empty
     } catch (e) {}
   }
-  const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noClosedMacro, noMissingHlt, noInvalidMacroNames];
+  const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noUnclosedMacro, noMissingHlt, noInvalidMacroNames];
   for (const check of checks) {
     try {
       const markerData = check(parsedText);
