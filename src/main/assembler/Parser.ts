@@ -92,6 +92,13 @@ export default class Parser {
     const currentReplacers: Array<EqData> = [];
     const spliceIndeces: Array<number> = [];
     const replacedLines = lines.map((line, i) => {
+      for (const replacer of currentReplacers) {
+        if (replacer.replacerRegex.test(line.content)) {
+          const toReplace = new RegExp(`(\\b${replacer.stringToBeReplaced}\\b)(?=(?:(?:[^']*'){2})*[^']*$)`, 'g');
+          // eslint-disable-next-line
+          line.content = (line.content as any).replaceAll(toReplace, replacer.replacerString) as string;
+        }
+      }
       if (pseudoInstructionRegex.test(line.content)) {
         let pseudoInstruction;
         try {
@@ -110,13 +117,6 @@ export default class Parser {
             currentReplacers.push({ replacerString: replacerString, stringToBeReplaced: stringToBeReplaced, replacerRegex: replacerRegex });
           }
           spliceIndeces.push(i);
-        }
-      }
-      for (const replacer of currentReplacers) {
-        if (replacer.replacerRegex.test(line.content)) {
-          const toReplace = new RegExp(`(\\b${replacer.stringToBeReplaced}\\b)(?=(?:(?:[^']*'){2})*[^']*$)`, 'g');
-          // eslint-disable-next-line
-          line.content = (line.content as any).replaceAll(toReplace, replacer.replacerString) as string;
         }
       }
       return line;
