@@ -157,6 +157,26 @@ const noInstructionOperandsNumberMismatch = (parsedText: Array<LineParsedForChec
   return markerData;
 };
 
+const noInvalidLabelNames = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
+  const linesWithLabels = parsedText.filter(line => line.label);
+  const { declarationKeywords, mnemonicKeywords, registerKeywords, pseudoInstructionKeywords } = keywords;
+  const reservedKeywords = [...declarationKeywords, ...mnemonicKeywords, ...registerKeywords, ...pseudoInstructionKeywords].map(keyword => keyword.toUpperCase());
+  const markerData: Array<I8080MarkerData> = [];
+  for (const line of linesWithLabels) {
+    if (reservedKeywords.includes(line.label.name.trim().toUpperCase())) {
+      const match = labelRegex.exec(line.rawLine);
+      const [startColumn, endColumn] = getColumnIndeces(match.groups.label, line.rawLine);
+      markerData.push({
+        lineNumber: line.lineNumber,
+        startColumn: startColumn,
+        endColumn: endColumn,
+        message: `${line.label.name} is an invalid label keyword`
+      });
+    }
+  }
+  return markerData;
+};
+
 const noMacroOperandsNumberMismatch = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
   const macros = parsedText.filter(line => line.macro).map(line => line.macro);
   const macroNames = macros.map(macro => macro.name);
@@ -357,7 +377,7 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
       console.error(e);
     }
   }
-  const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noUnclosedMacro, noMissingHlt, noInvalidMacroNames];
+  const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noUnclosedMacro, noMissingHlt, noInvalidMacroNames, noInvalidLabelNames];
   for (const check of checks) {
     try {
       const markerData = check(parsedText);
