@@ -1,5 +1,5 @@
 import { prettifyPseudoInstruction, PrettyPrintable } from '@renderer/EditorConfiguration/editor.documentFormattingProvider';
-import { expressionRegex, pseudoInstructionRegex, strictNumber } from '@utils/Regex';
+import { pseudoInstructionRegex, strictNumber } from '@utils/Regex';
 import Parser, { parseExpression, parseToInt } from '../Parser';
 
 type AllowedOps = 'ORG' | 'EQU' | 'SET' | 'END' | 'IF' | 'ENDIF' | 'MACRO' | 'ENDM';
@@ -24,7 +24,7 @@ export default class PseudoInstruction implements PrettyPrintable {
       const operand = Parser.replaceDollar(opnd, address);
       if (strictNumber.exec(operand)) {
         return parseToInt(operand);
-      } else if (expressionRegex.exec(operand)) {
+      } else if (parseExpression(operand) !== null) {
         return parseExpression(operand);
       }
       throw new Error(`Invalid argument type for pseudoinstruction ORG: ${opnd}`);

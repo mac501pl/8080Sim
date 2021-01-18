@@ -1,5 +1,5 @@
 import { prettifyInstruction, PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
-import { commaSeparatorRegex, expressionRegex, instructionRegex, literalRegex, strictNumber, registerOrMemoryRegex } from '@utils/Regex';
+import { commaSeparatorRegex, instructionRegex, literalRegex, strictNumber, registerOrMemoryRegex } from '@utils/Regex';
 import Parser, { Label, parseExpression, parseToInt } from '../Parser';
 
 export class Operand {
@@ -14,7 +14,6 @@ export class Operand {
 
 const STRICT_LITERAL = new RegExp(`^${literalRegex.source}$`, 'i');
 const STRICT_REGISTER = new RegExp(`^${registerOrMemoryRegex.source}$`, 'i');
-const STRICT_EXPRESSION = new RegExp(`^${expressionRegex.source}$`, 'i');
 
 export default class Instruction implements PrettyPrintable {
   public readonly mnemonic: string;
@@ -48,11 +47,8 @@ export default class Instruction implements PrettyPrintable {
         return new Operand(operand, potentialLabel.address);
       } else if (STRICT_REGISTER.exec(operand)) {
         return new Operand(operand);
-      } else if (STRICT_EXPRESSION.exec(operand)) {
-        const result = parseExpression(operand);
-        if (!isNaN(result)) {
-          return new Operand(operand, result);
-        }
+      } else if (parseExpression(operand) !== null) {
+        return new Operand(operand, parseExpression(operand));
       }
       return new Operand(operand);
     });

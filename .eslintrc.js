@@ -40,7 +40,6 @@ module.exports = {
       'ignorePackages', { js: 'never', jsx: 'never', ts: 'never', tsx: 'never', },
     ],
     'comma-dangle': [ 'error', 'never' ],
-    'no-cond-assign': [ 'error', 'always' ],
     'no-console': ['warn'],
     'no-unexpected-multiline': 'error',
     'accessor-pairs': [ 'error', { getWithoutSet: false, setWithoutGet: true} ],

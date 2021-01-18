@@ -245,19 +245,27 @@ export const parseExpression = (expression: string): number => {
   const divide = (a: number, b: number): number => Math.floor(a / b);
   math.import({ divide: divide }, { override: true });
 
-  return Number(math.evaluate(expression
-    .replace(literalRegex, match => match.charCodeAt(1).toString())
-    .replace(binNumberRegex, match => parseInt(match.replace(/B/ig, ''), 2).toString())
-    .replace(hexNumberRegex, match => parseInt(match.replace(/H/ig, ''), 16).toString())
-    .replace(octNumberRegex, match => parseInt(match.replace(/[OQ]/ig, ''), 8).toString())
-    .replace(decNumberRegex, match => parseInt(match.replace(/D/ig, ''), 10).toString())
-    .replace(/MOD/gi, '%')
-    .replace(/NOT/gi, '~')
-    .replace(/AND/gi, '&')
-    .replace(/XOR/gi, '^|')
-    .replace(/OR/gi, '|')
-    .replace(/SHR/gi, '>>')
-    .replace(/SHL/gi, '<<')
-    .toLowerCase()
-  ));
+  try {
+    const result = Number(math.evaluate(expression
+      .replace(literalRegex, match => match.charCodeAt(1).toString())
+      .replace(binNumberRegex, match => parseInt(match.replace(/B/ig, ''), 2).toString())
+      .replace(hexNumberRegex, match => parseInt(match.replace(/H/ig, ''), 16).toString())
+      .replace(octNumberRegex, match => parseInt(match.replace(/[OQ]/ig, ''), 8).toString())
+      .replace(decNumberRegex, match => parseInt(match.replace(/D/ig, ''), 10).toString())
+      .replace(/MOD/gi, '%')
+      .replace(/NOT/gi, '~')
+      .replace(/AND/gi, '&')
+      .replace(/XOR/gi, '^|')
+      .replace(/OR/gi, '|')
+      .replace(/SHR/gi, '>>')
+      .replace(/SHL/gi, '<<')
+      .toLowerCase()
+    ));
+    if (isNaN(result)) {
+      return null;
+    }
+    return result;
+  } catch (e) {
+    return null;
+  }
 };

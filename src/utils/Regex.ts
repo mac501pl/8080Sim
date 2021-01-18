@@ -12,8 +12,6 @@ export const labelRegex = /^\s*((?<label>[\w]+):)/i;
 export const number = [hexNumberRegex, binNumberRegex, octNumberRegex, decNumberRegex].map(regex => `(\\b${regex.source}\\b)`).join('|');
 export const strictNumber = new RegExp([hexNumberRegex, binNumberRegex, octNumberRegex, decNumberRegex].map(regex => `(^${regex.source}$)`).join('|'), 'i');
 
-export const expressionRegex = new RegExp(`^((((NOT|-)\\s*){0,2})(${number}|${literalRegex.source}))(\\s*(\\+|-|\\*|\\/|MOD|AND|OR|XOR|SHR|SHL)\\s*(((NOT|-)\\s*){0,2})(${number}|${literalRegex.source}))*`, 'i');
-
 export const instructionRegex = /^(\s*\w*\s*:)?\s*(?<mnemonic>\b[A-Z_]+\b(?<!\bD[BWS]\b)(?!(\s*:)))\s*(?<operands>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\s*(.*))?$/im;
 export const declarationRegex = /^(\s*\w*\s*:)?\s*(?<type>\bD[BWS]\b)\s+(?<arg>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\s*(.*))?$/im;
 export const commaSeparatorRegex = /,(?=(?:(?:[^']*'){2})*[^']*$)/;

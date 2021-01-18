@@ -1,5 +1,5 @@
 import { prettifyDeclaration, PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
-import { commaSeparatorRegex, declarationRegex, expressionRegex, strictNumber, textRegex } from '@utils/Regex';
+import { commaSeparatorRegex, declarationRegex, strictNumber, textRegex } from '@utils/Regex';
 import Parser, { Label, parseExpression, parseToInt } from '../Parser';
 import HexNum from './HexNum';
 
@@ -44,7 +44,7 @@ export default class Declaration implements PrettyPrintable {
     if (strictNumber.exec(arg)) {
       const value = parseToInt(arg);
       return new Array<HexNum>(value).fill(new HexNum());
-    } else if (expressionRegex.exec(arg)) {
+    } else if (parseExpression(arg) !== null) {
       const value = parseExpression(arg);
       return new Array<HexNum>(value).fill(new HexNum());
     }
@@ -60,7 +60,7 @@ export default class Declaration implements PrettyPrintable {
       return new HexNum(parseToInt(value));
     } else if (textRegex.exec(value)) {
       return this.mapStringTo8BitHexNum(value);
-    } else if (expressionRegex.exec(value)) {
+    } else if (parseExpression(value) !== null) {
       return new HexNum(parseExpression(value));
     }
     throw new Error(`Invalid 8 bit declaration argument: ${value}`);
@@ -79,7 +79,7 @@ export default class Declaration implements PrettyPrintable {
       return HexNum.to16Bit(parseToInt(value));
     } else if (textRegex.exec(value)) {
       return this.mapStringTo16BitHexNum(value);
-    } else if (expressionRegex.exec(value)) {
+    } else if (parseExpression(value) !== null) {
       return HexNum.to16Bit(parseExpression(value));
     } else if (this.isIncludedInLabelList(value, labels)) {
       const label = labels.find(_label => _label.name.toLowerCase() === value.toLowerCase());
