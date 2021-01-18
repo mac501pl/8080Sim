@@ -231,11 +231,11 @@ export const parseToInt = (numberToParse: string): number => {
   if (strictHexRegex.test(numberToParse)) {
     return parseInt(numberToParse.replace(/H/i, ''), 16);
   } else if (strictDecRegex.test(numberToParse)) {
-    return parseInt(numberToParse, 10);
+    return parseInt(numberToParse.replace(/D/i, ''), 10);
   } else if (strictBinRegex.test(numberToParse)) {
     return parseInt(numberToParse.replace(/B/i, ''), 2);
   } else if (strictOctRegex.test(numberToParse)) {
-    return parseInt(numberToParse.replace(/O/ig, ''), 8);
+    return parseInt(numberToParse.replace(/[OQ]/ig, ''), 8);
   }
   throw new Error(`Cannot parse to int: ${numberToParse}`);
 };
@@ -249,7 +249,8 @@ export const parseExpression = (expression: string): number => {
     .replace(literalRegex, match => match.charCodeAt(1).toString())
     .replace(binNumberRegex, match => parseInt(match.replace(/B/ig, ''), 2).toString())
     .replace(hexNumberRegex, match => parseInt(match.replace(/H/ig, ''), 16).toString())
-    .replace(octNumberRegex, match => parseInt(match.replace(/O/ig, ''), 8).toString())
+    .replace(octNumberRegex, match => parseInt(match.replace(/[OQ]/ig, ''), 8).toString())
+    .replace(decNumberRegex, match => parseInt(match.replace(/D/ig, ''), 10).toString())
     .replace(/MOD/gi, '%')
     .replace(/NOT/gi, '~')
     .replace(/AND/gi, '&')

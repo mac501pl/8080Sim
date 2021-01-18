@@ -1,9 +1,9 @@
 export const commentRegex = /\s*;(?=(?:(?:[^']*'){2})*[^']*$)\s*(?<comment>.*)/i;
 
 export const hexNumberRegex = /[0-9]+[0-9A-F]*H/gi;
-export const decNumberRegex = /[0-9]+/gi;
+export const decNumberRegex = /[0-9]+D?/gi;
 export const binNumberRegex = /[0-1]+B/gi;
-export const octNumberRegex = /[0-7]+O/gi;
+export const octNumberRegex = /[0-7]+[OQ]/gi;
 export const literalRegex = /'[^\n']'/gi;
 export const textRegex = /^'[^\n']*'$/i;
 export const registerOrMemoryRegex = /\b[ABCDEHLM]\b/i;
