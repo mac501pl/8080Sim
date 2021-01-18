@@ -12,7 +12,7 @@ export default class HexNum {
     if (value > 0xffff) {
       throw new Error('Value should not be greater than 0xffff');
     }
-    return [new HexNum(value & 0xff), new HexNum(value >>> 0x8)];
+    return [new HexNum(value & 0xff), new HexNum((value & 0xffff) >>> 0x8)];
   }
 
   public get intValue(): number {
