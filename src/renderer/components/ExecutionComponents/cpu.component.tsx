@@ -84,9 +84,10 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     for (let i = 0; i < fillArrayLength; i++) {
       fillArray[i] = new HexNum();
     }
+    const firstInstructionLocation = assemblerOutput.findIndex(byte => byte.intValue !== 0);
     return {
-      PC: new HexNum16(),
-      previousPC: new HexNum16(),
+      PC: new HexNum16(firstInstructionLocation),
+      previousPC: new HexNum16(firstInstructionLocation),
       registers: {
         A: new Register('A'),
         B: new Register('B'),

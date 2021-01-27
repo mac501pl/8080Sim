@@ -4,6 +4,7 @@ import { IInstruction } from '@/main/instruction_list';
 import { ParsedLine } from './Parser';
 import Instruction from './Types/Instruction';
 import Declaration from './Types/Declaration';
+import PseudoInstruction from './Types/PseudoInstruction';
 
 export interface LinesWithOpcodes {
   line: ParsedLine;
@@ -14,7 +15,16 @@ const assemble = (parserOutput: Array<ParsedLine>): Array<LinesWithOpcodes> => p
   if (line.content) {
     const content = line.content;
     try {
-      if (content instanceof Instruction) {
+      if (content instanceof PseudoInstruction) {
+        const { op, opnd } = content;
+        if (op === 'ORG') {
+          const filler = new Array(Number(opnd)).fill(new HexNum());
+          return {
+            line: line,
+            bytes: filler
+          };
+        }
+      } else if (content instanceof Instruction) {
         const desiredInstruction: IInstruction = findInstruction(content);
         return {
           line: line,

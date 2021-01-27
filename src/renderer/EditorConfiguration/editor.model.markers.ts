@@ -242,6 +242,23 @@ const noUnclosedMacro = (parsedText: Array<LineParsedForCheck>): Array<I8080Mark
   return markerData;
 };
 
+const noMisusedOrg = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> =>
+  parsedText
+    .map((line, i) => ({ line: line, index: i }))
+    .filter(({ line: { content } }) => content instanceof PseudoInstruction)
+    .filter(({ line: { content } }) => (content as PseudoInstruction).op === 'ORG')
+    .filter(({ index }) => index !== 0)
+    .map(({ line: { rawLine, lineNumber } }) => {
+      const { groups: { op } } = pseudoInstructionRegex.exec(rawLine);
+      const [startColumn, endColumn] = getColumnIndeces(op, rawLine);
+      return ({
+        lineNumber: lineNumber,
+        startColumn: startColumn,
+        endColumn: endColumn,
+        message: 'ORG pseudoinstruction can only be used as the first statement in the code'
+      });
+    });
+
 const noOperandTypemismatch = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
   const findExpectedOperandLength = (mnemonic: string): number => instructionList.find(instruction => instruction.mnemonic === mnemonic.toUpperCase()).operands.length;
   const macros = parsedText.filter(line => line.macro);
@@ -377,7 +394,7 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
       console.error(e);
     }
   }
-  const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noUnclosedMacro, noMissingHlt, noInvalidMacroNames, noInvalidLabelNames];
+  const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noUnclosedMacro, noMissingHlt, noInvalidMacroNames, noInvalidLabelNames, noMisusedOrg];
   for (const check of checks) {
     try {
       const markerData = check(parsedText);
