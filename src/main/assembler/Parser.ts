@@ -106,7 +106,6 @@ export default class Parser {
         try {
           pseudoInstruction = new PseudoInstruction(line.content);
         } catch (error) {
-          spliceIndeces.push(i);
           return line;
         }
         if (['EQU', 'SET'].includes(pseudoInstruction.op)) {
