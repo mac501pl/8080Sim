@@ -10,7 +10,7 @@ import * as monaco from 'monaco-editor/esm/vs/editor/editor.api';
 import { CustomError } from 'ts-custom-error';
 import keywords from './keywords';
 
-class ParseError extends CustomError {
+export class ParseError extends CustomError {
   public constructor(public lineNumber: number, public message: string) {
     super(message);
     this.lineNumber = lineNumber;
@@ -46,7 +46,9 @@ const parseForSyntaxCheck = (text: string): Array<LineParsedForCheck> => {
     return null;
   }).filter(n => n);
 
-  return linesWithoutEqu.map((line, i) => {
+  const linesWithoutVariables = Parser.replaceVariables(linesWithoutEqu.map(line => ({ content: { content: line, breakpoint: false }, address:0 })), labels).map(({ content: { content } }) => content);
+
+  return linesWithoutVariables.map((line, i) => {
     let label: Label, content: LineContentType, macro: LightMacro;
 
     try {
@@ -373,6 +375,7 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
   try {
     parsedText = parseForSyntaxCheck(value);
   } catch (e) {
+    // console.error(e);
     const error = e as ParseError;
     return [mapToMonacoMarkerData({
       lineNumber: error.lineNumber,
@@ -391,7 +394,7 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
       }
     } catch (e) {
     // eslint-disable-next-line no-console
-      console.error(e);
+      // console.error(e);
     }
   }
   const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noUnclosedMacro, noMissingHlt, noInvalidMacroNames, noInvalidLabelNames, noMisusedOrg];
@@ -403,7 +406,7 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
       }
     } catch (e) {
     // eslint-disable-next-line no-console
-      console.error(e);
+      // console.error(e);
     }
   }
   return markerDataToShow.map(markerData => mapToMonacoMarkerData(markerData));

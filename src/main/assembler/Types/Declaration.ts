@@ -1,6 +1,6 @@
 import { prettifyDeclaration, PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
 import { commaSeparatorRegex, declarationRegex, strictNumber, textRegex } from '@utils/Regex';
-import Parser, { Label, parseExpression, parseToInt } from '../Parser';
+import Parser, { Label, parseExpression, parseToInt } from '@main/assembler/Parser';
 import HexNum from './HexNum';
 
 type DeclarationTypes = 'DB' | 'DW' | 'DS';
@@ -10,13 +10,15 @@ export default class Declaration implements PrettyPrintable {
   public readonly list: Array<HexNum>;
   public readonly line: string;
   public readonly address: number;
+  public readonly variable?: string;
 
   public constructor(line: string, labels = [] as Array<Label>, address = 0) {
-    const { type, arg } = declarationRegex.exec(line).groups;
+    const { variable, type, arg } = declarationRegex.exec(line).groups;
     this.address = address;
     this.type = type as DeclarationTypes;
     this.list = this.parseArguments(arg, labels);
     this.line = line;
+    this.variable = variable?.trim();
   }
 
   private splitAndTrimArguments(arg: string): Array<string> {

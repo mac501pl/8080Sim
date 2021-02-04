@@ -5,6 +5,7 @@ import Declaration from './Types/Declaration';
 import { all, create } from 'mathjs';
 import { PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
 import PseudoInstruction from './Types/PseudoInstruction';
+import { ParseError } from '@renderer/EditorConfiguration/editor.model.markers';
 
 const strictHexRegex = new RegExp(`^${hexNumberRegex.source}$`, 'i');
 const strictBinRegex = new RegExp(`^${binNumberRegex.source}$`, 'i');
@@ -66,8 +67,9 @@ export default class Parser {
     const linesWithAddresses = this.assignAddressesToLines(linesWithoutMacros);
 
     const labels = this.getLabels(linesWithAddresses);
+    const linesWithoutVariables = Parser.replaceVariables(linesWithAddresses, labels);
 
-    return linesWithAddresses.map((line, i) => {
+    return linesWithoutVariables.map((line, i) => {
       let label: Label, content: LineContentType;
       const lineContent = line.content.content;
       const address = line.address;
@@ -220,6 +222,27 @@ export default class Parser {
         }
         return null;
       }).filter(n => n);
+  }
+
+  public static replaceVariables(lines: Array<LineWithAddress>, labels: Array<Label>): Array<LineWithAddress> {
+    lines.forEach(({ content: { content }, address }) => {
+      if (declarationRegex.test(content)) {
+        const { variable, list } = new Declaration(content, labels, address);
+        if (variable) {
+          const regex = new RegExp(`\\b(?<name>${variable})\\b(\\[(?<index>\\d+)\\])?(?=([^']*'[^']*')*[^']*$)(?!(\\s*(:|\\bD[BWS]\\b)))`, 'gi');
+          lines.forEach((line, i) => {
+            line.content.content = line.content.content.replace(regex, match => {
+              const index = (/\[\d+\]/).test(match) ? Number((/\[(?<index>\d+)\]/).exec(match).groups.index) : 0;
+              if (index > list.length - 1) {
+                throw new ParseError(i, 'Variable index out of bounds');
+              }
+              return list[index].intValue.toString();
+            });
+          });
+        }
+      }
+    });
+    return lines;
   }
 
   private applyBreakpointsToLines(splittedText: Array<string>, breakpoints: Array<number>): Array<LineWithBreakpoint> {

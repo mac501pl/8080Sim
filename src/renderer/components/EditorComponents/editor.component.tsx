@@ -31,6 +31,7 @@ export default class Editor extends React.PureComponent<EditorPropTypes, EditorS
   private monarchTokensProvider: monacoEditor.IDisposable;
   private completionItemProvider: monacoEditor.IDisposable;
   private documentFormattingEditProvider: monacoEditor.IDisposable;
+  private timeoutId: ReturnType<typeof setTimeout>;
 
   public constructor(props: EditorPropTypes) {
     super(props);
@@ -146,7 +147,8 @@ export default class Editor extends React.PureComponent<EditorPropTypes, EditorS
 
   public onChange(newValue: string, _e: monacoEditor.editor.IModelContentChangedEvent): void {
     ipcRenderer.send('changed', newValue);
-    this.monaco.editor.setModelMarkers(this.monacoEditor.getModel(), 'checkSyntax', createModelMarkers(newValue));
+    clearTimeout(this.timeoutId);
+    this.timeoutId = setTimeout(() => this.monaco.editor.setModelMarkers(this.monacoEditor.getModel(), 'checkSyntax', createModelMarkers(newValue)), 1000);
 
     const pos = this.monacoEditor.getPosition();
     if (pos) {

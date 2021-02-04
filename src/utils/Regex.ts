@@ -12,8 +12,8 @@ export const labelRegex = /^\s*((?<label>[\w]+):)/i;
 export const number = [hexNumberRegex, binNumberRegex, octNumberRegex, decNumberRegex].map(regex => `(\\b${regex.source}\\b)`).join('|');
 export const strictNumber = new RegExp([hexNumberRegex, binNumberRegex, octNumberRegex, decNumberRegex].map(regex => `(^${regex.source}$)`).join('|'), 'i');
 
-export const instructionRegex = /^(\s*\w*\s*:)?\s*(?<mnemonic>\b[A-Z_]+\b(?<!\bD[BWS]\b)(?!(\s*:)))\s*(?<operands>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\s*(.*))?$/im;
-export const declarationRegex = /^(\s*\w*\s*:)?\s*(?<type>\bD[BWS]\b)\s+(?<arg>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\s*(.*))?$/im;
+export const instructionRegex = /^(\s*\w*\s*:)?\s*(?<mnemonic>\b[A-Z_]+\b(?<!\bD[BWS]\b)(?!(\s*(:|\bD[BWS]\b))))\s*(?<operands>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\s*(.*))?$/im;
+export const declarationRegex = /^((\s*\w*\s*:)|(?<variable>\s*\w*\s*))?\s*(?<type>\bD[BWS]\b)\s+(?<arg>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\s*(.*))?$/im;
 export const commaSeparatorRegex = /,(?=(?:(?:[^']*'){2})*[^']*$)/;
 
 export const pseudoInstructionRegex = /^\s*(((?<name>\w+):?)\s+)?(?<op>MACRO|ENDM|ORG|EQU|SET|END|IF|ENDIF)\s*(?<opnd>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\s*(.*))?$/im;
