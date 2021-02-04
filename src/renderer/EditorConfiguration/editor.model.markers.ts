@@ -244,22 +244,24 @@ const noUnclosedMacro = (parsedText: Array<LineParsedForCheck>): Array<I8080Mark
   return markerData;
 };
 
-const noMisusedOrg = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> =>
-  parsedText
-    .map((line, i) => ({ line: line, index: i }))
-    .filter(({ line: { content } }) => content instanceof PseudoInstruction)
-    .filter(({ line: { content } }) => (content as PseudoInstruction).op === 'ORG')
-    .filter(({ index }) => index !== 0)
-    .map(({ line: { rawLine, lineNumber } }) => {
-      const { groups: { op } } = pseudoInstructionRegex.exec(rawLine);
-      const [startColumn, endColumn] = getColumnIndeces(op, rawLine);
-      return ({
-        lineNumber: lineNumber,
-        startColumn: startColumn,
-        endColumn: endColumn,
-        message: 'ORG pseudoinstruction can only be used as the first statement in the code'
-      });
+const noMisusedOrg = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
+  const indexedText = parsedText.map((line, i) => ({ line: line, index: i }));
+  const instructions = indexedText.filter(({ line: { content } }) => content instanceof Instruction);
+  const org = indexedText.find(({ line: { content } }) => content instanceof PseudoInstruction && content.op === 'ORG');
+  const markerData: Array<I8080MarkerData> = [];
+  if (org && instructions.some(({ index }) => index < org.index)) {
+    const { line: { lineNumber, rawLine } } = org;
+    const { groups: { op } } = pseudoInstructionRegex.exec(rawLine);
+    const [startColumn, endColumn] = getColumnIndeces(op, rawLine);
+    markerData.push({
+      lineNumber: lineNumber,
+      startColumn: startColumn,
+      endColumn: endColumn,
+      message: 'ORG pseudoinstruction can only be used before any of the instructions'
     });
+  }
+  return markerData;
+};
 
 const noOperandTypemismatch = (parsedText: Array<LineParsedForCheck>): Array<I8080MarkerData> => {
   const findExpectedOperandLength = (mnemonic: string): number => instructionList.find(instruction => instruction.mnemonic === mnemonic.toUpperCase()).operands.length;
