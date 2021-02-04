@@ -110,7 +110,7 @@ export default class Parser {
         }
         if (['EQU', 'SET'].includes(pseudoInstruction.op)) {
           const { name: stringToBeReplaced, opnd: replacerString } = pseudoInstructionRegex.exec(line.content).groups;
-          const replacerRegex = new RegExp(`(?<toReplace>\\b${stringToBeReplaced}\\b)(?=(?:(?:[^']*'){2})*[^']*$)`);
+          const replacerRegex = new RegExp(`(?<toReplace>\\b${stringToBeReplaced}\\b)(?=(?:(?:[^']*'){2})*[^']*$)(?!(\\s*(:|\\b[eE][qQ][uU]|[sS][eE][tT]\\b)))`);
           if (pseudoInstruction.op === 'SET' && currentReplacers.find(replacer => replacer.stringToBeReplaced === stringToBeReplaced)) {
             const index = currentReplacers.findIndex(replacer => replacer.stringToBeReplaced === stringToBeReplaced);
             currentReplacers[index] = { replacerString: replacerString, stringToBeReplaced: stringToBeReplaced, replacerRegex: replacerRegex };

@@ -203,7 +203,8 @@ const noMacroOperandsNumberMismatch = (parsedText: Array<LineParsedForCheck>): A
 };
 
 const noMisusedEqu = (text: Array<string>): Array<I8080MarkerData> => {
-  const linesWithEqus = text.map((line, i) => ({ content: line, lineNumber: i })).filter(line => pseudoInstructionRegex.test(line.content)).map(line => ({ rawLine: line.content, pseudoInstruction: new PseudoInstruction(line.content), lineNumber: line.lineNumber })).filter(line => line.pseudoInstruction.op.toUpperCase() === 'EQU');
+  const linesWithEqus = text.map((line, i) => ({ content: line, lineNumber: i })).filter(line => pseudoInstructionRegex.test(line.content)).filter(line => line.content.toUpperCase().includes('EQU')).map(line => ({ rawLine: line.content, pseudoInstruction: new PseudoInstruction(line.content), lineNumber: line.lineNumber }));
+
   const markerData: Array<I8080MarkerData> = [];
   const equs: Array<string> = [];
   for (const line of linesWithEqus) {
@@ -377,7 +378,7 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
   try {
     parsedText = parseForSyntaxCheck(value);
   } catch (e) {
-    // console.error(e);
+    console.error(e);
     const error = e as ParseError;
     return [mapToMonacoMarkerData({
       lineNumber: error.lineNumber,
@@ -396,7 +397,7 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
       }
     } catch (e) {
     // eslint-disable-next-line no-console
-      // console.error(e);
+      console.error(e);
     }
   }
   const checks: Array<Check> = [noUnknownMnemonicsOrMacros, noLabelRedefinition, noMacroRedefinition, noInstructionOperandsNumberMismatch, noMacroOperandsNumberMismatch, noOperandTypemismatch, noUnclosedMacro, noMissingHlt, noInvalidMacroNames, noInvalidLabelNames, noMisusedOrg];
@@ -408,7 +409,7 @@ export const createModelMarkers = (value: string): Array<editor.IMarkerData> => 
       }
     } catch (e) {
     // eslint-disable-next-line no-console
-      // console.error(e);
+      console.error(e);
     }
   }
   return markerDataToShow.map(markerData => mapToMonacoMarkerData(markerData));
