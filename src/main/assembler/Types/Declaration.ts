@@ -50,7 +50,7 @@ export default class Declaration implements PrettyPrintable {
       const value = parseExpression(arg);
       return new Array<HexNum>(value).fill(new HexNum());
     }
-    throw new Error(`Invalid DS argument: ${arg}\nDS expects an arithmetical or logical expression`);
+    throw new Error(`Invalid DS argument: ${arg}\nDS expects a number or an arithmetical or logical expression`);
   }
 
   private mapStringTo8BitHexNum(str: string): Array<HexNum> {
