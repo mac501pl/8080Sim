@@ -28,10 +28,10 @@ export const prettifyInstruction = (line: string): string => {
 };
 
 export const prettifyDeclaration = (line: string): string => {
-  const { type, arg } = declarationRegex.exec(line).groups;
+  const { variable, type, arg } = declarationRegex.exec(line).groups;
   const splittedArg = arg.split(commaSeparatorRegex);
 
-  return `\t${type.trim().toUpperCase()} ${splittedArg
+  return `${variable ? variable.trim() : ''}\t${type.trim().toUpperCase()} ${splittedArg
     .map(_arg => _arg.trim())
     .join(', ')
     .trim()}`;
