@@ -1861,7 +1861,8 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
   }
 
   private async updateAssemblerCode(newCode: Array<HexNum>): Promise<void> {
-    await this.setState({ code: newCode });
+    this.intermediateState.code = newCode;
+    await this.setState({ code: this.intermediateState.code });
   }
 
   public render(): JSX.Element {

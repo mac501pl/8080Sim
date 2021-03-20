@@ -19,7 +19,6 @@ interface MemoryViewState {
   showInputTooltip: boolean;
   locationToJumpTo: string;
   isInputInvalid: boolean;
-  code: Array<HexNum>;
 }
 
 export default class MemoryView extends React.Component<MemoryViewProps, MemoryViewState> {
@@ -34,7 +33,6 @@ export default class MemoryView extends React.Component<MemoryViewProps, MemoryV
     showInputTooltip: false;
     locationToJumpTo: '',
     isInputInvalid: false,
-    code: Array<HexNum>;
   }
 
   public constructor(props: MemoryViewProps) {
@@ -51,8 +49,7 @@ export default class MemoryView extends React.Component<MemoryViewProps, MemoryV
       editing: false,
       showInputTooltip: false,
       locationToJumpTo: '',
-      isInputInvalid: false,
-      code: props.code
+      isInputInvalid: false
     };
   }
 
@@ -93,7 +90,7 @@ export default class MemoryView extends React.Component<MemoryViewProps, MemoryV
 
   private updateMemoryCell(index: number, newValue: string): void {
     if (this.isValidHexNumber(newValue)) {
-      const code = this.state.code;
+      const code = this.props.code;
       code[index] = new HexNum(parseInt(newValue, 16));
       this.props.updateAssemblerCode(code);
     }
