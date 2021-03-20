@@ -67,7 +67,13 @@ export default class App extends React.PureComponent {
   }
 
   private build(): void {
-    const assemblerOutput = this.assemble();
+    let assemblerOutput;
+    try {
+      assemblerOutput = this.assemble();
+    } catch (e) {
+      this.runProgram(ExecutionMode.RUN);
+      return;
+    }
     const result = remote.dialog.showSaveDialogSync({
       title: 'Export memory', buttonLabel: 'Export',
       filters: [
