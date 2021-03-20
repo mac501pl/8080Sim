@@ -59,7 +59,7 @@ export default class InstructionsView extends React.PureComponent<InstructionVie
             className={`d-flex justify-content-between py-1 ${(entry.line.content as Instruction)?.address === this.props.currentPC ? 'bg-white text-dark' : 'bg-dark text-white'}`}
           >
             <div className="d-flex justify-content-between align-items-center">
-              {(entry.line.content as Instruction).breakpoint && this.props.debug && <div className="breakpoint"/>}
+              {(entry.line.content as Instruction).breakpoint && this.props.debug && <div className="instruction-breakpoint"/>}
               <div className="pl-3">{(entry.line.content as PrettyPrintable).prettyPrint()}</div>
             </div>
             <div className="float-right text-muted">{`; ${entry.bytes.map(byte => byte.toHex()).join(' ')}`}</div>

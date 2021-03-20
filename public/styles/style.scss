@@ -3,9 +3,14 @@
 .breakpoint {
   border-radius: 50%;
   background-color: darkred;
+}
+
+.instruction-breakpoint {
+  border-radius: 50%;
+  background-color: darkred;
   padding: 7px !important;
-  width: 1vw !important;
-  height: 1vh !important;
+  width: 17px !important;
+  height: 17px !important;
 }
 
 body {
