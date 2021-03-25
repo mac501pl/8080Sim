@@ -1791,7 +1791,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // PUSH PSW
     case 0xf5: {
-      this.intermediateState.code[this.intermediateState.SP.intValue - 2 & 0xffff] = this.intermediateState.flags.content;
+      this.intermediateState.code[this.intermediateState.SP.intValue - 2 & 0xffff].intValue = this.intermediateState.flags.content.intValue;
       this.intermediateState.code[this.intermediateState.SP.intValue - 1 & 0xffff] = this.intermediateState.registers.A.content;
       this.intermediateState.SP.intValue -= 2;
       break;
