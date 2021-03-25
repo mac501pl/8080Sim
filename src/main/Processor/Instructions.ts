@@ -7,7 +7,7 @@ const sign = (value: HexNum): boolean => value.intValue >> 7 === 1;
 const zero = (value: HexNum): boolean => value.intValue === 0;
 
 export const inr = (value: HexNum): { result: HexNum; flags: FlagStructure } => {
-  const result = new HexNum(value.intValue + 1);
+  const result = new HexNum((value.intValue + 1) & 0xff);
   const flags: FlagStructure = {
     zero: zero(result),
     sign: sign(result),
@@ -18,7 +18,7 @@ export const inr = (value: HexNum): { result: HexNum; flags: FlagStructure } => 
 };
 
 export const dcr = (value: HexNum): { result: HexNum; flags: FlagStructure } => {
-  const result = new HexNum(value.intValue - 1);
+  const result = new HexNum((value.intValue - 1) & 0xff);
   const flags: FlagStructure = {
     zero: zero(result),
     sign: sign(result),
@@ -29,7 +29,7 @@ export const dcr = (value: HexNum): { result: HexNum; flags: FlagStructure } => 
 };
 
 export const rlc = (value: HexNum): { result: HexNum; flags: FlagStructure } => {
-  const result = new HexNum(value.intValue << 1 | value.intValue >> 7);
+  const result = new HexNum((value.intValue << 1 | value.intValue >> 7) & 0xff);
   const flags: FlagStructure = {
     carry: value.intValue >> 7 === 1
   };
@@ -37,7 +37,7 @@ export const rlc = (value: HexNum): { result: HexNum; flags: FlagStructure } => 
 };
 
 export const rrc = (value: HexNum): { result: HexNum; flags: FlagStructure } => {
-  const result = new HexNum(value.intValue >> 1 | (value.intValue & 1) << 7);
+  const result = new HexNum((value.intValue >> 1 | (value.intValue & 1) << 7) & 0xff);
   const flags: FlagStructure = {
     carry: (value.intValue & 1) === 1
   };
@@ -45,7 +45,7 @@ export const rrc = (value: HexNum): { result: HexNum; flags: FlagStructure } => 
 };
 
 export const ral = (value: HexNum, carry: boolean): { result: HexNum; flags: FlagStructure } => {
-  const result = new HexNum(value.intValue << 1 | Number(carry));
+  const result = new HexNum((value.intValue << 1 | Number(carry)) & 0xff);
   const flags: FlagStructure = {
     carry: (value.intValue >> 7) === 1
   };
@@ -53,7 +53,7 @@ export const ral = (value: HexNum, carry: boolean): { result: HexNum; flags: Fla
 };
 
 export const rar = (value: HexNum, carry: boolean): { result: HexNum; flags: FlagStructure } => {
-  const result = new HexNum(value.intValue >> 1 | Number(carry) << 7);
+  const result = new HexNum((value.intValue >> 1 | Number(carry) << 7) & 0xff);
   const flags: FlagStructure = {
     carry: (value.intValue & 1) === 1
   };
@@ -62,7 +62,7 @@ export const rar = (value: HexNum, carry: boolean): { result: HexNum; flags: Fla
 
 export const add = (num1: HexNum, num2: HexNum): { result: HexNum; flags: FlagStructure } => {
   const added = num1.intValue + num2.intValue;
-  const result = new HexNum(added);
+  const result = new HexNum(added & 0xff);
 
   const flags: FlagStructure = {
     zero: zero(result),
@@ -76,7 +76,7 @@ export const add = (num1: HexNum, num2: HexNum): { result: HexNum; flags: FlagSt
 
 export const adc = (num1: HexNum, num2: HexNum, carry: boolean): { result: HexNum; flags: FlagStructure } => {
   const added = num1.intValue + num2.intValue + Number(carry);
-  const result = new HexNum(added);
+  const result = new HexNum(added & 0xff);
 
   const flags: FlagStructure = {
     zero: zero(result),
@@ -90,7 +90,7 @@ export const adc = (num1: HexNum, num2: HexNum, carry: boolean): { result: HexNu
 
 export const sub = (num1: HexNum, num2: HexNum): { result: HexNum; flags: FlagStructure } => {
   const subbed = num1.intValue + (~num2.intValue + 1);
-  const result = new HexNum(subbed);
+  const result = new HexNum(subbed & 0xff);
 
   const flags: FlagStructure = {
     zero: zero(result),
@@ -104,7 +104,7 @@ export const sub = (num1: HexNum, num2: HexNum): { result: HexNum; flags: FlagSt
 
 export const sbb = (num1: HexNum, num2: HexNum, carry: boolean): { result: HexNum; flags: FlagStructure } => {
   const subbed = num1.intValue + (~num2.intValue + 1 + Number(carry));
-  const result = new HexNum(subbed);
+  const result = new HexNum(subbed & 0xff);
 
   const flags: FlagStructure = {
     zero: zero(result),
@@ -117,7 +117,7 @@ export const sbb = (num1: HexNum, num2: HexNum, carry: boolean): { result: HexNu
 };
 
 export const ana = (num1: HexNum, num2: HexNum): { result: HexNum; flags: FlagStructure } => {
-  const result = new HexNum(num1.intValue & num2.intValue);
+  const result = new HexNum((num1.intValue & num2.intValue) & 0xff);
 
   const flags: FlagStructure = {
     zero: zero(result),
@@ -129,7 +129,7 @@ export const ana = (num1: HexNum, num2: HexNum): { result: HexNum; flags: FlagSt
 };
 
 export const xra = (num1: HexNum, num2: HexNum): { result: HexNum; flags: FlagStructure } => {
-  const result = new HexNum(num1.intValue ^ num2.intValue);
+  const result = new HexNum((num1.intValue ^ num2.intValue) & 0xff);
 
   const flags: FlagStructure = {
     zero: zero(result),
@@ -142,7 +142,7 @@ export const xra = (num1: HexNum, num2: HexNum): { result: HexNum; flags: FlagSt
 };
 
 export const ora = (num1: HexNum, num2: HexNum): { result: HexNum; flags: FlagStructure } => {
-  const result = new HexNum(num1.intValue | num2.intValue);
+  const result = new HexNum((num1.intValue | num2.intValue) & 0xff);
 
   const flags: FlagStructure = {
     zero: zero(result),
@@ -154,7 +154,7 @@ export const ora = (num1: HexNum, num2: HexNum): { result: HexNum; flags: FlagSt
 };
 
 export const cmp = (num1: HexNum, num2: HexNum): FlagStructure => {
-  const result = new HexNum(num1.intValue + (~num2.intValue + 1));
+  const result = new HexNum((num1.intValue + (~num2.intValue + 1)) & 0xff);
 
   return {
     zero: zero(result),
@@ -202,5 +202,5 @@ export const daa = (regA: Register, flagRegister: FlagRegister): { result: HexNu
     sign: sign(accumulatorValue),
     parity: parity(accumulatorValue)
   };
-  return { result: new HexNum(newAccumulatorValue), flags: flags };
+  return { result: new HexNum(newAccumulatorValue & 0xff), flags: flags };
 };
