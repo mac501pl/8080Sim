@@ -163,6 +163,11 @@ function createMainWindow(): void {
         { label: 'Autoformat',
           accelerator: 'Alt+Shift+F',
           click: (): void => mainWindow.webContents.send('autoformat')
+        },
+        { label: 'Disable/Enable IntelliSense',
+          click: (): void => {
+            mainWindow.webContents.send('flip-intellisense');
+          }
         }
       ]
     },

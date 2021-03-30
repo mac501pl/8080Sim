@@ -15,6 +15,7 @@ import MouseTargetType = editor.MouseTargetType;
 interface EditorPropTypes {
   code: string;
   breakpoints: Array<number>;
+  intellisenseEnabled: boolean;
 }
 
 interface EditorStateTypes {
@@ -47,6 +48,23 @@ export default class Editor extends React.PureComponent<EditorPropTypes, EditorS
     };
   }
 
+  private shouldAddCompletionProvider(): boolean {
+    return this.props.intellisenseEnabled && !this.completionItemProvider;
+  }
+
+  private shouldRemoveCompletionProvider(): boolean {
+    return !this.props.intellisenseEnabled && Boolean(this.completionItemProvider);
+  }
+
+  public componentDidUpdate(): void {
+    if (this.shouldAddCompletionProvider()) {
+      this.completionItemProvider = this.monaco.languages.registerCompletionItemProvider(this.languageId, completionItemProvider);
+    } else if (this.shouldRemoveCompletionProvider()) {
+      this.completionItemProvider.dispose();
+      this.completionItemProvider = null;
+    }
+  }
+
   public getEditorValueAndBreakpoints(): {code: string, breakpoints: Array<number>} {
     return { code: this.monacoEditor.getValue(), breakpoints: this.breakpoints };
   }
@@ -57,7 +75,9 @@ export default class Editor extends React.PureComponent<EditorPropTypes, EditorS
     ipcRenderer.removeAllListeners('autoformat');
     window.removeEventListener('resize', this.handleResize);
     this.monarchTokensProvider.dispose();
-    this.completionItemProvider.dispose();
+    if (this.completionItemProvider) {
+      this.completionItemProvider.dispose();
+    }
     this.documentFormattingEditProvider.dispose();
   }
 
@@ -110,7 +130,9 @@ export default class Editor extends React.PureComponent<EditorPropTypes, EditorS
   public editorWillMount(monaco: typeof monacoEditor): void {
     monaco.languages.register({ id: this.languageId });
     this.monarchTokensProvider = monaco.languages.setMonarchTokensProvider(this.languageId, languageDefinition as MonarchLanguageConfiguration);
-    this.completionItemProvider = monaco.languages.registerCompletionItemProvider(this.languageId, completionItemProvider);
+    if (this.shouldAddCompletionProvider()) {
+      this.completionItemProvider = monaco.languages.registerCompletionItemProvider(this.languageId, completionItemProvider);
+    }
     monaco.editor.defineTheme(this.themeId, theme as editor.IStandaloneThemeData);
     this.documentFormattingEditProvider = monaco.languages.registerDocumentFormattingEditProvider(this.languageId, {
       provideDocumentFormattingEdits: model => [{

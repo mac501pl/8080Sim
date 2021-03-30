@@ -21,6 +21,7 @@ export interface AppStateType {
   breakpoints: Array<number>;
   assemblerOutput: Array<LinesWithOpcodes>;
   assembleError: Error;
+  intellisenseEnabled: boolean;
 }
 
 export default class App extends React.PureComponent {
@@ -30,7 +31,8 @@ export default class App extends React.PureComponent {
     code: '',
     breakpoints: [],
     assemblerOutput: [],
-    assembleError: null
+    assembleError: null,
+    intellisenseEnabled: true
   };
 
   private readonly editorRef: React.RefObject<Editor>;
@@ -43,10 +45,15 @@ export default class App extends React.PureComponent {
       code: '',
       breakpoints: [],
       assemblerOutput: [],
-      assembleError: null
+      assembleError: null,
+      intellisenseEnabled: true
     };
 
     this.editorRef = createRef<Editor>();
+
+    ipcRenderer.on('flip-intellisense', () => {
+      this.setState({ intellisenseEnabled: !this.state.intellisenseEnabled });
+    });
   }
 
   private assemble(): Array<LinesWithOpcodes> {
@@ -92,7 +99,7 @@ export default class App extends React.PureComponent {
   public render(): JSX.Element {
     return !this.state.isExecuting ?
       <div className="bg-dark text-white vw-100 vh-100 d-flex">
-        <Editor code={this.state.code} breakpoints={this.state.breakpoints} ref={this.editorRef}/>
+        <Editor code={this.state.code} breakpoints={this.state.breakpoints} ref={this.editorRef} intellisenseEnabled={this.state.intellisenseEnabled}/>
         <ExecuteButtons steps={() : void => {
           void this.runProgram(ExecutionMode.STEPS);
         }} run={() : void => {
