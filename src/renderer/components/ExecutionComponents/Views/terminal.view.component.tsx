@@ -86,7 +86,7 @@ export default class TerminalView extends React.PureComponent<TerminalViewPropTy
           }
           break;
         case InputType.RST5:
-          if ((/[0-9A-FOBH]/i).exec(e)) {
+          if ((/[0-9A-FOQBH]/i).exec(e)) {
             this.writeKey(e);
           }
           break;
