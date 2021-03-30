@@ -12,7 +12,7 @@ const strictHexRegex = new RegExp(`^${hexNumberRegex.source}$`, 'i');
 const strictBinRegex = new RegExp(`^${binNumberRegex.source}$`, 'i');
 const strictDecRegex = new RegExp(`^${decNumberRegex.source}$`, 'i');
 const strictOctRegex = new RegExp(`^${octNumberRegex.source}$`, 'i');
-const DOLLAR_OPERATOR = /\B\$\B/ig;
+const DOLLAR_OPERATOR = /\B\$\B(?=([^']*'[^']*')*[^']*$)/ig;
 
 export class Macro {
   public readonly name: string;
