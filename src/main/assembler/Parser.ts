@@ -1,4 +1,4 @@
-import { findInstructionSize } from '@utils/Utils';
+import { findInstructionSize, intersects } from '@utils/Utils';
 import { labelRegex, instructionRegex, declarationRegex, commentRegex, hexNumberRegex, binNumberRegex, decNumberRegex, octNumberRegex, literalRegex, pseudoInstructionRegex } from '@utils/Regex';
 import Instruction from './Types/Instruction';
 import Declaration from './Types/Declaration';
@@ -6,6 +6,7 @@ import { all, create } from 'mathjs';
 import { PrettyPrintable } from '@/renderer/EditorConfiguration/editor.documentFormattingProvider';
 import PseudoInstruction from './Types/PseudoInstruction';
 import { ParseError } from '@renderer/EditorConfiguration/editor.model.markers';
+import instructionList from '../instruction_list';
 
 const strictHexRegex = new RegExp(`^${hexNumberRegex.source}$`, 'i');
 const strictBinRegex = new RegExp(`^${binNumberRegex.source}$`, 'i');
@@ -230,13 +231,16 @@ export default class Parser {
         if (variable) {
           const regex = new RegExp(`\\b(?<name>${variable})\\b(\\[(?<index>\\d+)\\])?(?=([^']*'[^']*')*[^']*$)(?!(\\s*(:|\\bD[BWS]\\b)))`, 'gi');
           lines.forEach((line, i) => {
-            line.content.content = line.content.content.replace(regex, match => {
-              const index = (/\[\d+\]/).test(match) ? Number((/\[(?<index>\d+)\]/).exec(match).groups.index) : 0;
-              if (index > list.length - 1) {
-                throw new ParseError(i, 'Variable index out of bounds');
-              }
-              return list[index].intValue.toString();
-            });
+            if (instructionRegex.test(line.content.content)) {
+              line.content.content = line.content.content.replace(regex, match => {
+                const index = (/\[\d+\]/).test(match) ? Number((/\[(?<index>\d+)\]/).exec(match).groups.index) : 0;
+                const shouldUse2Bits = intersects(instructionList.find(({ mnemonic }) => mnemonic === instructionRegex.exec(line.content.content).groups.mnemonic.trim().toUpperCase()).operands, ['nn', 'a']);
+                if (index + Number(shouldUse2Bits) > list.length - 1) {
+                  throw new ParseError(i, 'Variable index out of bounds');
+                }
+                return shouldUse2Bits ? (list[index + 1].intValue << 8 | list[index].intValue).toString() : list[index].intValue.toString();
+              });
+            }
           });
         }
       }
