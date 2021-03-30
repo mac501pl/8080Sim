@@ -81,9 +81,8 @@ export default class TerminalView extends React.PureComponent<TerminalViewPropTy
       default:
         switch (this.props.inputType) {
         case InputType.RST2:
-          if (lastInputLength < 1) {
-            this.writeKey(e);
-          }
+          this.terminal.write(e);
+          document.dispatchEvent(new CustomEvent<string>('line-break', { detail: e }));
           break;
         case InputType.RST5:
           if ((/[0-9A-FOQBH]/i).exec(e)) {
