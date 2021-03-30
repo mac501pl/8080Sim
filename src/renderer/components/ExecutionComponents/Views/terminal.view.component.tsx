@@ -67,30 +67,32 @@ export default class TerminalView extends React.PureComponent<TerminalViewPropTy
     this.terminal.open(document.getElementById('terminal'));
 
     this.terminal.onData(e => {
-      const lastInputLength = this.state.lastInput.length;
-      switch (e) {
-      case '\n':
-      case '\r':
-        this.breakLine();
-        break;
-      case '\u007F':
-        if (lastInputLength > 0) {
-          this.backspace();
-        }
-        break;
-      default:
-        switch (this.props.inputType) {
-        case InputType.RST2:
-          this.terminal.write(e);
-          document.dispatchEvent(new CustomEvent<string>('line-break', { detail: e }));
+      if (this.props.acceptsInput) {
+        const lastInputLength = this.state.lastInput.length;
+        switch (e) {
+        case '\n':
+        case '\r':
+          this.breakLine();
           break;
-        case InputType.RST5:
-          if ((/[0-9A-FOQBH]/i).exec(e)) {
-            this.writeKey(e);
+        case '\u007F':
+          if (lastInputLength > 0) {
+            this.backspace();
           }
           break;
         default:
-          return;
+          switch (this.props.inputType) {
+          case InputType.RST2:
+            this.terminal.write(e);
+            document.dispatchEvent(new CustomEvent<string>('line-break', { detail: e }));
+            break;
+          case InputType.RST5:
+            if ((/[0-9A-FOQBH]/i).exec(e)) {
+              this.writeKey(e);
+            }
+            break;
+          default:
+            return;
+          }
         }
       }
     });
