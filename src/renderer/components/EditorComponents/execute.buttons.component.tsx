@@ -15,16 +15,16 @@ export default function ExecuteButtons({ steps, run, debug, build }: ExecuteButt
     <OverlayTrigger
       placement="left"
       delay={{ show: 250, hide: 400 }}
-      overlay={(props): JSX.Element => <Tooltip id="button-tooltip" {...props}>Single-step mode</Tooltip>}
+      overlay={(props): JSX.Element => <Tooltip id="button-tooltip" {...props}>Run</Tooltip>}
     >
-      <Button className="m-1" variant="outline-light" onClick={ steps } id="build-button"><FontAwesomeIcon icon={faShoePrints} /></Button>
+      <Button className="m-1" variant="outline-light" onClick={ run } id="run-button"><FontAwesomeIcon icon={faPlay} /></Button>
     </OverlayTrigger>
     <OverlayTrigger
       placement="left"
       delay={{ show: 250, hide: 400 }}
-      overlay={(props): JSX.Element => <Tooltip id="button-tooltip" {...props}>Run</Tooltip>}
+      overlay={(props): JSX.Element => <Tooltip id="button-tooltip" {...props}>Single-step mode</Tooltip>}
     >
-      <Button className="m-1" variant="outline-light" onClick={ run } id="run-button"><FontAwesomeIcon icon={faPlay} /></Button>
+      <Button className="m-1" variant="outline-light" onClick={ steps } id="build-button"><FontAwesomeIcon icon={faShoePrints} /></Button>
     </OverlayTrigger>
     <OverlayTrigger
       placement="left"
