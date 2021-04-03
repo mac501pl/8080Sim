@@ -153,11 +153,19 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     return this.state.breakpoints.includes(PC);
   }
 
+  public shouldComponentUpdate(_nextProps: Readonly<CPUProps>, { executionEnded, isHalted, acceptInput }: Readonly<CPUState>): boolean {
+    const { acceptInput: acceptedInput } = this.state;
+    return executionEnded || isHalted || (acceptedInput === true && acceptInput === false);
+  }
+
   private async executeNextInstruction(): Promise<void> {
     const currentInstruction = findInstructionByOpCode(this.readCurrentInstruction(this.state.PC.intValue));
     this.intermediateState.previousPC.intValue = this.intermediateState.PC.intValue;
-    this.intermediateState.PC.intValue += currentInstruction.size;
     try {
+      this.intermediateState.PC.intValue += currentInstruction.size;
+      if (this.intermediateState.previousPC.intValue + currentInstruction.size >= this.state.code.length) {
+        throw new Error('Program counter reached out of memory');
+      }
       this.runInstruction(currentInstruction);
     } catch (e) {
       this.terminalRef.current.writeError(`Runtime error: ${(e as Error).message}\n\rCheck your source code (this is probably related to stack overflow or PC pointing to a wrong value)`);
