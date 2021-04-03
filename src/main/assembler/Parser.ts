@@ -273,9 +273,9 @@ export const parseExpression = (expression: string): number => {
 
   try {
     const result = Number(math.evaluate(expression
-      .replace(literalRegex, match => match.charCodeAt(1).toString())
-      .replace(binNumberRegex, match => parseInt(match.replace(/B/ig, ''), 2).toString())
+      .replace(literalRegex, match => match.charCodeAt(1).toString()) // order of replacements matters! (1bh - could be treated as binary because of 1b satisfies binary regex)
       .replace(hexNumberRegex, match => parseInt(match.replace(/H/ig, ''), 16).toString())
+      .replace(binNumberRegex, match => parseInt(match.replace(/B/ig, ''), 2).toString())
       .replace(octNumberRegex, match => parseInt(match.replace(/[OQ]/ig, ''), 8).toString())
       .replace(decNumberRegex, match => parseInt(match.replace(/D/ig, ''), 10).toString())
       .replace(/MOD/gi, '%')
