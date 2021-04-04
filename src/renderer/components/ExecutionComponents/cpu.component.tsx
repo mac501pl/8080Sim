@@ -65,6 +65,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     this.intermediateState = this.initializeIntermediateState();
     const initialMetaState = this.initializeMetaState();
     this.setState({ ...this.intermediateState, ...initialMetaState, isHalted: false });
+    this.forceUpdate();
   }
 
   private initializeMetaState(): CPUMetaInfo {
@@ -153,9 +154,8 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     return this.state.breakpoints.includes(PC);
   }
 
-  public shouldComponentUpdate(_nextProps: Readonly<CPUProps>, { executionEnded, isHalted, acceptInput }: Readonly<CPUState>): boolean {
-    const { acceptInput: acceptedInput } = this.state;
-    return executionEnded || isHalted || (acceptedInput === true && acceptInput === false);
+  public shouldComponentUpdate(_nextProps: Readonly<CPUProps>, { executionEnded, isHalted }: Readonly<CPUState>): boolean {
+    return executionEnded || isHalted;
   }
 
   private async executeNextInstruction(): Promise<void> {
@@ -1584,6 +1584,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
         const char = (evt as CustomEvent<string>).detail;
         this.intermediateState.registers.A.content = new HexNum(char.charCodeAt(0));
         this.setState({ acceptInput: false, isHalted: false, inputType: undefined });
+        this.forceUpdate();
         if (this.state.executionMode === ExecutionMode.RUN) {
           void this.resumeExecution();
         }
@@ -1756,6 +1757,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
           this.terminalRef.current.writeError(`Runtime error: ${(e as Error).message}\n\rThe number you have input was of invalid format\n\rIt will be discarded`);
         }
         this.setState({ acceptInput: false, isHalted: false, inputType: undefined });
+        this.forceUpdate();
         if (this.state.executionMode === ExecutionMode.RUN) {
           void this.resumeExecution();
         }
@@ -1863,7 +1865,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
       break;
     }
     default: {
-      throw new Error('nieznany opcode');
+      throw new Error('Unknown OpCode');
     }
     }
   }
@@ -1871,6 +1873,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
   private async updateAssemblerCode(newCode: Array<HexNum>): Promise<void> {
     this.intermediateState.code = newCode;
     await this.setState({ code: this.intermediateState.code });
+    this.forceUpdate();
   }
 
   public render(): JSX.Element {
