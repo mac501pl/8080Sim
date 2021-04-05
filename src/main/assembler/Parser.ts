@@ -163,7 +163,7 @@ export default class Parser {
     macros.map(macro => macro.removeIndexes).reverse().forEach(indexPair => {
       lines.splice(indexPair.beginning, indexPair.length);
     });
-    const macroRegex = new RegExp(`^\\s*(?<name>${macros.map(macro => macro.name).join('|')})\\s*(?<args>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\\s*(.*))?$`);
+    const macroRegex = new RegExp(`^\\s*(?<name>${macros.map(macro => `\\b${macro.name}\\b`).join('|')})\\s*(?<args>.*?)(;(?=(?:(?:[^']*'){2})*[^']*$)\\s*(.*))?$`);
 
     return lines
       .map(line => {
