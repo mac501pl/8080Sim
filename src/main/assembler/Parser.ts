@@ -234,7 +234,12 @@ export default class Parser {
             if (instructionRegex.test(line.content.content)) {
               line.content.content = line.content.content.replace(regex, match => {
                 const index = (/\[\d+\]/).test(match) ? Number((/\[(?<index>\d+)\]/).exec(match).groups.index) : 0;
-                const shouldUse2Bits = intersects(instructionList.find(({ mnemonic }) => mnemonic === instructionRegex.exec(line.content.content).groups.mnemonic.trim().toUpperCase()).operands, ['nn', 'a']);
+                let shouldUse2Bits;
+                try {
+                  shouldUse2Bits = intersects(instructionList.find(({ mnemonic }) => mnemonic === instructionRegex.exec(line.content.content).groups.mnemonic.trim().toUpperCase())?.operands, ['nn', 'a']);
+                } catch (_e) {
+                  shouldUse2Bits = false;
+                }
                 if (index + Number(shouldUse2Bits) > list.length - 1) {
                   throw new ParseError(i, 'Variable index out of bounds');
                 }
