@@ -1827,7 +1827,7 @@ export default class CPU extends React.Component<CPUProps, CPUState> {
     }
     // SPHL
     case 0xf9: {
-      this.intermediateState.PC.intValue = this.getRegisterPair(this.intermediateState.registers.H, this.intermediateState.registers.L);
+      this.intermediateState.SP.intValue = this.getRegisterPair(this.intermediateState.registers.H, this.intermediateState.registers.L);
       break;
     }
     // JM a
