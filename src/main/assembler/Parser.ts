@@ -227,7 +227,13 @@ export default class Parser {
   public static replaceVariables(lines: Array<LineWithAddress>, labels: Array<Label>): Array<LineWithAddress> {
     lines.forEach(({ content: { content }, address }) => {
       if (declarationRegex.test(content)) {
-        const { variable, list } = new Declaration(content, labels, address);
+        let declaration;
+        try {
+          declaration = new Declaration(content, labels, address);
+        } catch (e) {
+          declaration = {};
+        }
+        const { variable, list } = declaration;
         if (variable) {
           const regex = new RegExp(`\\b(?<name>${variable})\\b(\\[(?<index>\\d+)\\])?(?=([^']*'[^']*')*[^']*$)(?!(\\s*(:|\\bD[BWS]\\b)))`, 'gi');
           lines.forEach((line, i) => {
