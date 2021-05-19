@@ -32,3 +32,7 @@ RET
 STRING: DB 'ALA MA KOTA@'
 RESULT_LOCATION: DB 'WORD COUNT: @'
 ```
+
+Screenshots:
+![Edition screen](images/edition-screen.png "Edition screen")
+![Execution screen](images/execution-screen.png "Execution screen")
