@@ -10,6 +10,8 @@ npm run prod
 npm start
 ```
 
+The assembler supports the following directives: ORG, EQU, SET, DB, DW, DS, MACRO, ENDM
+
 Example program:
 ```
 LXI H, STRING
